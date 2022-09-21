@@ -1,30 +1,64 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import click
-import logging
-from pathlib import Path
-from dotenv import find_dotenv, load_dotenv
+"""
+Created on Wed Sep 14 13:43:09 2022
+
+@author: frederikhartmann
+"""
+
+import numpy as np
+import os
+from torch.utils.data import Dataset
+from PIL import Image
+import glob
+class BacteriaDataset(Dataset):
+    # Initialize
+    def __init__(self, image_dir, mask_dir, transform=None):
+        self.image_dir = image_dir
+        self.mask_dir = mask_dir
+        self.transform = transform
+        self.images = list(set(os.listdir(image_dir)) - {'.DS_Store'})
+
+    # Define length of dataset
+    def __len__(self):
+        return len(self.images)
 
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
-    logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
+    # Define get item for data loader
+    def __getitem__(self, index):
+        # get image
+        img_path = os.path.join(self.image_dir, self.images[index]+"/images/"+self.images[index]+".png")
+        image = np.array(Image.open(img_path).convert("L"))
 
+        mask_path = os.path.join(self.image_dir, self.images[index]+"/masks/")
+        masks = list(set(os.listdir(mask_path)) - {'.DS_Store'})
 
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
+        merged_masks=np.zeros((image.shape))
+        for mask in masks:
+            temp_masks=np.array(Image.open(mask_path+"/"+mask).convert("L"), dtype=np.float32)
+            merged_masks+=temp_masks
 
-    # not used in this stub but often useful for finding various files
-    project_dir = Path(__file__).resolve().parents[2]
+        # img_path = os.path.join(self.image_dir, self.images[index])
 
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
+        # # Get mask
+        # mask_path = os.path.join(self.mask_dir, self.images[index].replace("TotalProjI", "Target"))
 
-    main()
+        # Load image and mask
+
+        mask = merged_masks #np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
+
+        # Preprocess mask - convert to 1
+        mask[mask != 0] = 1.0
+
+        # Do transforms if needed
+        if self.transform is not None:
+            augmentations = self.transform(image=image, mask=mask)
+            image = augmentations["image"]
+            mask = augmentations["mask"]
+        
+        # print(image.shape)
+        # print(mask.shape)
+        # cv2.imshow('img', image.numpy().squeeze())
+        # cv2.imshow("mask",mask.numpy())
+        # cv2.waitKey()
+        return image, mask
