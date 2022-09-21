@@ -10,7 +10,7 @@ import numpy as np
 import os
 from torch.utils.data import Dataset
 from PIL import Image
-import glob
+
 class BacteriaDataset(Dataset):
     # Initialize
     def __init__(self, image_dir, mask_dir, transform=None):
