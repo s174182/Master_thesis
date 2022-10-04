@@ -1,0 +1,17 @@
+Training on:  cuda
+Got 7857389/8388608 with accuracy 93.67
+Dice score: 0.7639896082153519
+=> Saving Checkpoint
+Training on:  cuda
+Got 8047234/8388608 with accuracy 95.93
+Dice score: 0.8421445274047619
+=> Saving Checkpoint
+Training on:  cuda
+Got 8017498/8388608 with accuracy 95.58
+Dice score: 0.816422347065463
+Training on:  cuda
+Got 8048729/8388608 with accuracy 95.95
+Dice score: 0.8378811528232564
+Training on:  cuda
+Got 7957572/8388608 with accuracy 94.86
+Dice score: 0.7771531070806803

@@ -8,7 +8,8 @@ Created on Wed Sep 14 14:37:52 2022
 import torch
 import torchvision
 import sys
-sys.path.append('../data')
+import os
+sys.path.append('src/data')
 from make_dataset import BacteriaDataset
 from torch.utils.data import DataLoader
 

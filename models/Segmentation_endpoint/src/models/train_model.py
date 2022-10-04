@@ -26,9 +26,9 @@ writer = SummaryWriter("../../reports/figures/tensorboard")
 
 # Hyper parameters
 LEARNING_RATE = 1e-4
-DEVICE = ('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 4
-NUM_EPOCHS = 2
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+BATCH_SIZE = 8
+NUM_EPOCHS = 5
 NUM_WORKERS = 4
 
 # CROP 
@@ -37,12 +37,12 @@ IMAGE_WIDTH = 256
 
 PIN_MEMORY = False
 LOAD_MODEL = False
-TRAIN_IMG_DIR = "../../data/external/stage1_train"
-TRAIN_MASK_DIR = "../../data/external/stage1_train"
-VAL_IMG_DIR = "../../data/external/stage1_val"
-VAL_MASK_DIR = "../../data/external/stage1_val"
+TRAIN_IMG_DIR = "/work3/s174182/data/external/stage1_train"
+TRAIN_MASK_DIR = "/work3/s174182/data/external/stage1_train"
+VAL_IMG_DIR = "/work3/s174182/data/external/stage1_val"
+VAL_MASK_DIR = "/work3/s174182/data/external/stage1_val"
 
-print("READY FOR THE TRAINING")
+
 # Train function does one epoch
 def train_fn(loader, model, optimizer, loss_fn, scaler, scheduler):
     loop = tqdm(loader)
@@ -51,7 +51,6 @@ def train_fn(loader, model, optimizer, loss_fn, scaler, scheduler):
     running_loss = 0.0
     for batch_idx, (data, targets) in enumerate(loop):
         data = data.float().to(device=DEVICE)
-        print("data is on GPU:", data.is_cuda)
         targets = targets.float().unsqueeze(1).to(device=DEVICE)
 
         # Forward pass
@@ -93,7 +92,7 @@ def main():
     
     # Create model, loss function, optimizer, loaders, scaler
     model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
-    #model.apply(weights_init)
+    model.apply(weights_init)
     
     # Add other parameters to log
     writer.add_scalar("Batch size", BATCH_SIZE)
@@ -133,7 +132,6 @@ def main():
     best_score=0
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
-        print("This is epoch number",epoch)
         loss = train_fn(train_loader, model, optimizer, loss_fn, scaler, scheduler)
         
                           
@@ -148,7 +146,7 @@ def main():
             # Save model, check accuracy, print some examples to folder
             checkpoint = {"state_dict": model.state_dict(),
                      "optimizer": optimizer.state_dict(),}
-            save_checkpoint(checkpoint,"model_tensorboard_try.pth")
+            save_checkpoint(checkpoint)
             best_score=dice_score
         
         # Save images
