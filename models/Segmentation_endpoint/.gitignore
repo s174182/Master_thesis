@@ -92,3 +92,5 @@ target/
 # Folders
 data/*
 *.pth
+*.err
+*.out
