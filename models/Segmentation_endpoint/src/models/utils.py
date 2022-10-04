@@ -13,7 +13,7 @@ from make_dataset import BacteriaDataset
 from torch.utils.data import DataLoader
 
 # save checkpoint
-def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
+def save_checkpoint(state, filename="my_checkpoint.pth"):
     print("=> Saving Checkpoint")
     torch.save(state, filename)
     
@@ -95,6 +95,4 @@ def save_predictions_as_imgs(loader, model, folder = "saved_images/", device="cp
             torchvision.utils.save_image(y.unsqueeze(1), f"{folder}target_{idx}.png")
     
     model.train()
-    
-    
     

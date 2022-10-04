@@ -17,7 +17,7 @@ class BacteriaDataset(Dataset):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.transform = transform
-        self.images = list(set(os.listdir(image_dir)) - {'.DS_Store'})
+        self.images = list(set(os.listdir(image_dir)) - {'desktop.ini'})
 
     # Define length of dataset
     def __len__(self):
@@ -31,7 +31,7 @@ class BacteriaDataset(Dataset):
         image = np.array(Image.open(img_path).convert("L"))
 
         mask_path = os.path.join(self.image_dir, self.images[index]+"/masks/")
-        masks = list(set(os.listdir(mask_path)) - {'.DS_Store'})
+        masks = list(set(os.listdir(mask_path)) - {'desktop.ini'})
 
         merged_masks=np.zeros((image.shape))
         for mask in masks:
