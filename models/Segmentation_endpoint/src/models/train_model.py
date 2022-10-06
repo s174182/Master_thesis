@@ -22,14 +22,14 @@ from utils import (load_checkpoint,
 from torch.utils.tensorboard import SummaryWriter
 
 # Create writerr for tensorboard
-writer = SummaryWriter("../../reports/figures/tensorboard")
+writer = SummaryWriter("./reports/figures/tensorboard")
 
 # Hyper parameters
 LEARNING_RATE = 1e-4
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 NUM_EPOCHS = 5
-NUM_WORKERS = 4
+NUM_WORKERS = 1
 
 # CROP 
 IMAGE_HEIGHT = 256
