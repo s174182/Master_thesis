@@ -7,6 +7,7 @@ Created on Wed Sep 14 14:37:52 2022
 """
 import torch
 import torchvision
+import torch.nn as nn
 import sys
 import os
 sys.path.append('src/data')
@@ -15,7 +16,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 # save checkpoint
-def save_checkpoint(state, filename="my_checkpoint.pth"):
+def save_checkpoint(state, filename="./models/my_checkpoint.pth"):
     print("=> Saving Checkpoint")
     torch.save(state, filename)
     
@@ -99,7 +100,6 @@ def save_predictions_as_imgs(loader, model, folder = "saved_images/", device="cp
     model.train()
 
 
-# jaccard loss function
 class IoULoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
         super(IoULoss, self).__init__()
@@ -107,7 +107,10 @@ class IoULoss(nn.Module):
     def forward(self, inputs, targets, smooth=1):
         
         #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = F.sigmoid(inputs)       
+     
+
+        inputs = torch.sigmoid(inputs)       
+
         
         #flatten label and prediction tensors
         inputs = inputs.view(-1)
@@ -122,3 +125,4 @@ class IoULoss(nn.Module):
         IoU = (intersection + smooth)/(union + smooth)
                 
         return 1 - IoU
+
