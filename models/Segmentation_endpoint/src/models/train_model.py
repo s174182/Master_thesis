@@ -18,6 +18,7 @@ from utils import (load_checkpoint,
                     get_loaders,
                     check_accuracy,
                     save_predictions_as_imgs,
+                    IoULoss,
                     )
 from torch.utils.tensorboard import SummaryWriter
 
@@ -27,8 +28,8 @@ writer = SummaryWriter("./reports/figures/tensorboard")
 # Hyper parameters
 LEARNING_RATE = 1e-4
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 16
-NUM_EPOCHS = 5
+BATCH_SIZE = 1
+NUM_EPOCHS = 10
 NUM_WORKERS = 1
 
 # CROP 
@@ -80,13 +81,17 @@ def train_fn(loader, model, optimizer, loss_fn, scaler, scheduler):
 def main():
     # Transformation on train set
     train_transform = A.Compose([
-        A.augmentations.crops.transforms.RandomCrop(height = IMAGE_HEIGHT, width = IMAGE_WIDTH, always_apply=True, p = 1.0),
+        A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
+        A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
+        A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
         ToTensorV2(),
         ])
     
     # Validation transforms
     val_transform = A.Compose([
-        A.augmentations.crops.transforms.RandomCrop(height = IMAGE_HEIGHT, width = IMAGE_WIDTH, always_apply=True, p = 1.0),
+        A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
+        A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
+        A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
         ToTensorV2(),
         ])
     
@@ -102,7 +107,7 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
     
-    loss_fn = nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    loss_fn = IoULoss() #nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-8) # add more params if wanted
     gamma = 0.9
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
