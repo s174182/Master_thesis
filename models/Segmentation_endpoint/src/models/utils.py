@@ -12,6 +12,7 @@ import os
 sys.path.append('src/data')
 from make_dataset import BacteriaDataset
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
 # save checkpoint
 def save_checkpoint(state, filename="my_checkpoint.pth"):
@@ -96,4 +97,28 @@ def save_predictions_as_imgs(loader, model, folder = "saved_images/", device="cp
             torchvision.utils.save_image(y.unsqueeze(1), f"{folder}target_{idx}.png")
     
     model.train()
-    
+
+
+# jaccard loss function
+class IoULoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(IoULoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = F.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        #intersection is equivalent to True Positive count
+        #union is the mutually inclusive area of all labels & predictions 
+        intersection = (inputs * targets).sum()
+        total = (inputs + targets).sum()
+        union = total - intersection 
+        
+        IoU = (intersection + smooth)/(union + smooth)
+                
+        return 1 - IoU

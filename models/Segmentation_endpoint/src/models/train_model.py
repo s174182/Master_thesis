@@ -18,6 +18,7 @@ from utils import (load_checkpoint,
                     get_loaders,
                     check_accuracy,
                     save_predictions_as_imgs,
+                    IoU_Loss,
                     )
 from torch.utils.tensorboard import SummaryWriter
 
@@ -102,7 +103,8 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
     
-    loss_fn = nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    loss_fn = IoULoss()#nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    writer.add_scalar("Loss function",loss_fn.__class__.__name__)
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-8) # add more params if wanted
     gamma = 0.9
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
