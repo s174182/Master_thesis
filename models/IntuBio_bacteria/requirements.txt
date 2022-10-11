@@ -1,6 +1,4 @@
 albumentations==1.0.3
-torch==1.12.1
-torchvision==0.13.1
 tqdm==4.64.1
 numpy
 dataset
@@ -11,3 +9,5 @@ patchify==0.2.3
 Pillow==8.4.0
 tensorboard
 six
+setuptools
+datetime

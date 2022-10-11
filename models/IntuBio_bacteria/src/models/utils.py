@@ -6,6 +6,7 @@ Created on Wed Sep 14 14:37:52 2022
 @author: frederikhartmann
 """
 import torch
+import torch.nn as nn
 import torchvision
 import sys
 import os
@@ -46,18 +47,22 @@ def check_accuracy(loader, model, device="cpu"):
     dice_score = 0
     # put model in eval
     model.eval()
-    
+    loss_fn=IoULoss()
+    loss_fn2=nn.BCEWithLogitsLoss()
+    running_loss=0
     # Go through loader
     with torch.no_grad():
         for x,y in loader:
             # Send to gpu or cpu
-            x = x.to(device)
-            y = y.to(device).unsqueeze(1)
+            x = x.float().to(device=device)
+            y = y.float().unsqueeze(1).to(device=device)
     
             # Predict (sigmoid good for binary)
             preds = model(x)
+            loss = loss_fn(preds,y)+1/4*loss_fn2(preds,y)
+            running_loss+=loss.item()
+
             preds = (preds>0.5).float()
-            
             # count
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
@@ -70,7 +75,7 @@ def check_accuracy(loader, model, device="cpu"):
     # Set model back to training
     model.train()
     
-    return dice_score/len(loader)
+    return dice_score/len(loader), running_loss/len(loader)
     
     
 # Save predictions
@@ -96,4 +101,27 @@ def save_predictions_as_imgs(loader, model, folder = "saved_images/", device="cp
             torchvision.utils.save_image(y.unsqueeze(1), f"{folder}target_{idx}.png")
     
     model.train()
-    
+
+
+class IoULoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(IoULoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = torch.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        #intersection is equivalent to True Positive count
+        #union is the mutually inclusive area of all labels & predictions 
+        intersection = (inputs * targets).sum()
+        total = (inputs + targets).sum()
+        union = total - intersection 
+        
+        IoU = (intersection + smooth)/(union + smooth)
+                
+        return 1 - IoU
