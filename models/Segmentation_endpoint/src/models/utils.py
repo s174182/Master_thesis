@@ -58,7 +58,7 @@ def check_accuracy(loader, model, device="cpu"):
     
             # Predict (sigmoid good for binary)
             preds = model(x)
-            preds = (preds>0.5).float()
+            #preds = (preds>0.5).float()
             
             # count
             num_correct += (preds == y).sum()
