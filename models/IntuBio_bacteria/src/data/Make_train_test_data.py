@@ -37,13 +37,14 @@ for f in folders:
         totalimg.append(new_img_list)
         totalmask.append(new_mask_list)
         
-X=sum(totalmask,[])
-y=sum(totalimg,[])
+y=sorted(sum(totalmask,[]))
+X=sorted(sum(totalimg,[]))
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=1)
 
 X_train, X_val, y_train, y_val= train_test_split(X_train, y_train, test_size=0.2, random_state=1)
+
 
 '''
 
@@ -52,27 +53,27 @@ Rename training and test data to appropriate folders.
 '''
 
 # Training
-# output_directory="/work3/s174182/train_data/Annotated_segmentation_patch/train/"
-# for i in range(len(X_train)):
-#     maskname=X_train[i]
-#     imgname=y_train[i]
-#     destmask=output_directory+str(maskname)[44:]
-#     destimg=output_directory+str(imgname)[44:]
+output_directory="/work3/s174182/train_data/Annotated_segmentation_patch/train/"
+for i in range(len(X_train)):
+    maskname=y_train[i]
+    imgname=X_train[i]
+    destmask=output_directory+str(maskname)[44:]
+    destimg=output_directory+str(imgname)[44:]
 
 
-#     os.makedirs("/"+"/".join(destmask.split("/")[1:-1]), exist_ok=True)
-#     os.makedirs("/"+"/".join(destimg.split("/")[1:-1]), exist_ok=True)
+    os.makedirs("/"+"/".join(destmask.split("/")[1:-1]), exist_ok=True)
+    os.makedirs("/"+"/".join(destimg.split("/")[1:-1]), exist_ok=True)
 
-#     shutil.copy(str(maskname), destmask)
-#     shutil.copy(str(imgname),destimg)
+    shutil.copy(str(maskname), destmask)
+    shutil.copy(str(imgname),destimg)
     
 
     
-# Val
+#Val
 output_directory="/work3/s174182/train_data/Annotated_segmentation_patch/val/"
 for i in range(len(X_val)):
-    maskname=X_val[i]
-    imgname=y_val[i]
+    maskname=y_val[i]
+    imgname=X_val[i]
     destmask=output_directory+str(maskname)[44:]
     destimg=output_directory+str(imgname)[44:]
 
@@ -86,8 +87,8 @@ for i in range(len(X_val)):
 # Test
 output_directory="/work3/s174182/train_data/Annotated_segmentation_patch/test/"
 for i in range(len(X_test)):
-    maskname=X_test[i]
-    imgname=y_test[i]
+    maskname=y_test[i]
+    imgname=X_test[i]
     destmask=output_directory+str(maskname)[44:]
     destimg=output_directory+str(imgname)[44:]
     os.makedirs("/"+"/".join(destmask.split("/")[1:-1]), exist_ok=True)

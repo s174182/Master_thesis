@@ -29,9 +29,15 @@ class BacteriaDataset(Dataset):
                 if ".DS_Store" in sf:
                     continue
                 # append inorm to images and mask to masks
-                self.images.append(f + "/" + sf + "/mask/Mask_1.png")
-                self.masks.append(f + "/" + sf + "/img/INorm.png")
-        
+                img_folder=os.listdir(f + "/" + sf + "/img")
+                mask_folder=os.listdir(f + "/" + sf + "/mask")
+                for k in range(len(img_folder)):
+                    self.images.append(f + "/" + sf +"/img/"+img_folder[k])
+                    self.masks.append(f + "/" + sf + "/mask/"+mask_folder[k])
+         
+        self.images.sort() 
+        self.masks.sort()      
+
         self.transform = transform
         
     # Define length of dataset
@@ -48,7 +54,6 @@ class BacteriaDataset(Dataset):
         # get mask
         mask_path = self.masks[index]
         mask = np.array(Image.open(mask_path).convert("L"))
-                
         # Preprocess mask - convert to 1
         mask[mask != 0] = 1.0
 
@@ -57,9 +62,7 @@ class BacteriaDataset(Dataset):
             augmentations = self.transform(image=image, mask=mask)
             image = augmentations["image"]
             mask = augmentations["mask"]
-        
-        # print(image.shape)
-        # print(mask.shape)
+
         # cv2.imshow('img', image.numpy().squeeze())
         # cv2.imshow("mask",mask.numpy())
         # cv2.waitKey()

@@ -1,0 +1,9 @@
+#basic.yaml
+hyperparameters:
+  learning_rate: 1e-4
+  batch_size: 8
+  num_epochs: 10
+  num_workers: 1
+  lossfn: "BCE" #"IoU"
+  weight_decay: 1e-8
+    

@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 # save checkpoint
-def save_checkpoint(state, filename="./models/my_checkpoint.pth"):
+def save_checkpoint(state, filename="./models/my_checkpoint_no_augmentation.pth"):
     print("=> Saving Checkpoint")
     torch.save(state, filename)
     
