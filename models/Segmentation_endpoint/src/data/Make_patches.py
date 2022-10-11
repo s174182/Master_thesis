@@ -17,9 +17,9 @@ import numpy as np
 from PIL import Image
 
 N=512
-step=256
+step=512
 main_directory="D:\Annotated_segmentation"
-Save_directory="D:\Annotated_segmentation_patch"
+Save_directory="D:\Annotated_segmentation_patch_512steps"
 
 folders=os.listdir(main_directory)
 

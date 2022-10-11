@@ -13,6 +13,7 @@ import os
 sys.path.append('src/data')
 from make_dataset import BacteriaDataset
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 
 # save checkpoint
 def save_checkpoint(state, filename="./models/my_checkpoint_no_augmentation.pth"):
@@ -97,7 +98,7 @@ def save_predictions_as_imgs(loader, model, folder = "saved_images/", device="cp
             torchvision.utils.save_image(y.unsqueeze(1), f"{folder}target_{idx}.png")
     
     model.train()
-    
+
 
 class IoULoss(nn.Module):
     def __init__(self, weight=None, size_average=True):
@@ -106,7 +107,10 @@ class IoULoss(nn.Module):
     def forward(self, inputs, targets, smooth=1):
         
         #comment out if your model contains a sigmoid or equivalent activation layer
+     
+
         inputs = torch.sigmoid(inputs)       
+
         
         #flatten label and prediction tensors
         inputs = inputs.view(-1)
@@ -121,3 +125,4 @@ class IoULoss(nn.Module):
         IoU = (intersection + smooth)/(union + smooth)
                 
         return 1 - IoU
+

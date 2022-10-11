@@ -107,7 +107,9 @@ def main():
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
     
+
     loss_fn = IoULoss() #nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-8) # add more params if wanted
     gamma = 0.9
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler

@@ -11,3 +11,4 @@ patchify==0.2.3
 Pillow==8.4.0
 tensorboard
 six
+sklearn
