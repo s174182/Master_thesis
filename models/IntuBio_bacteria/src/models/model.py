@@ -64,7 +64,7 @@ class Unet(nn.Module):
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
         
         # Sigmoid output
-        self.sigmoid = nn.Sigmoid()
+        #self.sigmoid = nn.Sigmoid()
                     
     # Define forward pass
     def forward(self, x):
@@ -99,7 +99,7 @@ class Unet(nn.Module):
         
         # Return final convolution of x after it is activated with sigmoid
         x = self.final_conv(x)
-        return self.sigmoid(x)
+        return x
 
 def test2():
     x = torch.randn((1,1,256,256))

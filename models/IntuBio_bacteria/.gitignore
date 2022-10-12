@@ -94,3 +94,6 @@ data/*
 *.pth
 *.err
 *.out
+
+# wandb key
+wandbkey.txt

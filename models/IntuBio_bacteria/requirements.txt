@@ -1,6 +1,6 @@
+numpy
 albumentations==1.0.3
 tqdm==4.64.1
-numpy
 dataset
 matplotlib
 scikit-build
@@ -11,3 +11,4 @@ tensorboard
 six
 setuptools
 datetime
+wandb
