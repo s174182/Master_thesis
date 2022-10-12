@@ -12,7 +12,7 @@ source ~/endpoint_segmentation/bin/activate
 
 #If pip3 fails, use: which pip3, to make sure it is the one in the virutal environment.
 #which pip3
-python3 -m pip install pip==21.3.1
+
 python3 -V
 
 python3 -m pip install hydra-core --upgrade
