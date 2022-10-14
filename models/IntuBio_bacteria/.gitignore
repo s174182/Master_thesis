@@ -94,3 +94,6 @@ data/*
 *.pth
 *.err
 *.out
+*.yaml
+*.yml
+wandbkey.txt

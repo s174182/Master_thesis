@@ -21,27 +21,22 @@ from utils import (load_checkpoint,
                     save_predictions_as_imgs,
                     IoULoss,
                     )
-from torch.utils.tensorboard import SummaryWriter
 import os
 import hydra
 from datetime import datetime
 import yaml
-
-# Create writer for tensorboard
-writer = SummaryWriter("./reports/figures/tensorboard")
+import wandb
 
 # Hyper parameters
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 MODELNAME= str(datetime.now())+".pth"
-#Add model name to yaml file and create a copy
-stream = open("basic.yaml", 'r')
-my_dict = yaml.full_load(stream)
-cpy = my_dict
-cpy["modelname"]=MODELNAME
-with open(f'{MODELNAME}'.replace(".", "_").replace(":","_")+".yaml", 'w') as file:
-    documents = yaml.dump(cpy, file)
 
-writer.add_text('model name', MODELNAME)
+
+# Initialize W and B
+
+wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio")
+
+
 
 
 
@@ -55,8 +50,8 @@ if Debug_MODE:
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
     VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
     VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
 
@@ -94,7 +89,7 @@ def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler):
             running_loss += loss.item()
         
     return running_loss/len(loop)
-print(os.getcwd())
+
 @hydra.main(version_base="1.2", config_path="../../",config_name="basic.yaml")
 def main(cfg):
     #Hyperparameters
@@ -106,6 +101,17 @@ def main(cfg):
     loss_fn2 =nn.BCEWithLogitsLoss()
     WEIGHT_DECAY=cfg.hyperparameters.weight_decay
     
+    wandb.config.update({
+    "learning_rate" : LEARNING_RATE,
+    "Batch_size" : BATCH_SIZE,
+    "epochs" : NUM_EPOCHS,
+    "Weight_decay" : WEIGHT_DECAY,
+    "Num_workers" : NUM_WORKERS,
+    "Optimizer" : "ADAM",
+    "loss" : "BCE",
+    "dataset" : TRAIN_IMG_DIR,
+    })
+
     #Transformation on train set
     train_transform = A.Compose([
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
@@ -127,10 +133,7 @@ def main(cfg):
     model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
     #model.apply(weights_init)
     
-    # Add other parameters to log
-    writer.add_scalar("Batch size", BATCH_SIZE)
-    writer.add_scalar("Learning rate", LEARNING_RATE)
-    
+
     # If we load model, load the checkpoint
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
@@ -172,11 +175,11 @@ def main(cfg):
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
-        # Log loss and dice score
-        writer.add_scalar("Training loss", train_loss, epoch)
-        writer.add_scalar("Validation loss", val_loss, epoch)
-        writer.add_scalar("Validation Dice_score", dice_score, epoch)
-        
+        wandb.log({'Training loss': train_loss,
+                   'Validation loss': val_loss,
+                   'Dice score': dice_score})
+
+
         if dice_score>best_score:
             # Save model, check accuracy, print some examples to folder
             checkpoint = {"state_dict": model.state_dict(),
@@ -187,7 +190,6 @@ def main(cfg):
         # Save images
         # save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=DEVICE)
     
-    writer.close()
     
     pass
 
