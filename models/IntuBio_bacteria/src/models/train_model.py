@@ -50,8 +50,8 @@ if Debug_MODE:
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
     VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
     VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
 
@@ -109,6 +109,7 @@ def main(cfg):
     "Num_workers" : NUM_WORKERS,
     "Optimizer" : "ADAM",
     "loss" : "BCE",
+    "dataset" : TRAIN_IMG_DIR,
     })
 
     #Transformation on train set

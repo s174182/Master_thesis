@@ -15,7 +15,9 @@ load module python3/10.3.2
 load module cuda
 source ~/endpoint_segmentation/bin/activate
 # Get api key for wandb
+
 export WANDB_API_KEY=$(cat wandbkey.txt)
+
 wandb login #wandb login
 
 python3 ./src/models/train_model.py
