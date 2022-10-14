@@ -31,24 +31,19 @@ import wandb
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 MODELNAME= str(datetime.now())+".pth"
 
-#Add model name to yaml file and create a copy
-stream = open("basic.yaml", 'r')
-my_dict = yaml.full_load(stream)
+
 # Initialize W and B
 
 wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio")
 
-cpy = my_dict
-cpy["modelname"]=MODELNAME
-with open(f'{MODELNAME}'.replace(".", "_").replace(":","_")+".yaml", 'w') as file:
-    documents = yaml.dump(cpy, file)
+
 
 
 
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=True
+Debug_MODE=False
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
@@ -106,7 +101,7 @@ def main(cfg):
     loss_fn2 =nn.BCEWithLogitsLoss()
     WEIGHT_DECAY=cfg.hyperparameters.weight_decay
     
-    wandb.config = {
+    wandb.config.update({
     "learning_rate" : LEARNING_RATE,
     "Batch_size" : BATCH_SIZE,
     "epochs" : NUM_EPOCHS,
@@ -114,7 +109,7 @@ def main(cfg):
     "Num_workers" : NUM_WORKERS,
     "Optimizer" : "ADAM",
     "loss" : "BCE",
-    }
+    })
 
     #Transformation on train set
     train_transform = A.Compose([
