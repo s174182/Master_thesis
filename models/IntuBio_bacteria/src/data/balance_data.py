@@ -25,59 +25,70 @@ from PIL import Image
 N=512
 step=256
 
-# save probability
-save_prob = 0.5
+# save probability 1-prob
+prob = 0.85
 
-# Main image directory
-main_directory="/work3/s174182/debug/Annotated_segmentation_patch/train"
+# Flags - set True on the wanted flag to clean the data
+TRAIN = True
+VAL = False
 
-# Save directory to
-save_directory="/work3/s174182/debug/Annotated_segmentation_patch_balanced/train"
+if TRAIN:
+    # Main image directory
+    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch/train/"
 
+    # Save directory to
+    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    VAL = False
+
+elif VAL:
+    # Main image directory
+    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch/val/"
+
+    # Save directory to
+    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
+    TRAIN = False
+    
 # Indices to save
 idx_save = []
 
 # Get in the main directory and go through the samples
 folders=os.listdir(main_directory)
-count_masks = 0
 for f in folders:
     # Go through wells A-C
     sub_folders=os.listdir(os.path.join(main_directory,f))
     for sf in sub_folders:
         # Go through masks and check if for empty images
         for masks in os.listdir(os.path.join(main_directory, f, sf, "mask/")):
-            count_masks += 1
             # Read image and check if they are black
-            if cv2.imread(os.path.join(main_directory, f, sf, "mask/", masks), 0).sum() < 1:
+            mask = cv2.imread(os.path.join(main_directory, f, sf, "mask/", masks), 0)
+            if mask.sum() < 1:
                 # If the image is black, draw uniform random number, 
-                # and add mask + raw image to save folder if that number is below save_prob
+                # and add mask + raw image to save folder if that number is above prob
                 rng_num = np.random.uniform(low=0.0, high=1.0)
-                if rng_num > save_prob:
+                if rng_num < prob:
                     continue
                 
                 else:
-                    idx_save.append(masks.split('_')[1][:-4])
+                    # Get image index
+                    idx = masks.split('_')[1][:-4]
 
-# Get in the main directory and go through the samples and save those in idx_save
-folders=os.listdir(main_directory)
-for f in folders:
-    # Go through wells A-C
-    sub_folders=os.listdir(os.path.join(main_directory,f))
-    for sf in sub_folders:
-        # Go through masks and check if for empty images
-        for masks in os.listdir(os.path.join(main_directory, f, sf, "mask/")):
-            for idx in idx_save:
-                # If the index in idx_save and in the image, save it
-                if idx == masks.split('_')[1][:-4]:
+                    # Save mask
                     os.makedirs(os.path.join(save_directory, f, sf, "mask/"), exist_ok=True)
-                    savemask = cv2.imread(os.path.join(main_directory, f, sf, "mask/", masks), 0)
-                    cv2.imwrite(os.path.join(save_directory, f, sf, "mask/", masks), savemask)   
-
-        # Go through raw images and save
-        for raw in os.listdir(os.path.join(main_directory, f, sf, "img/")):
-            for idx in idx_save:
-                # If the index in idx_save and in the image, save it
-                if idx == raw.split('_')[1][:-4]:
+                    cv2.imwrite(os.path.join(save_directory, f, sf, "mask/", masks), mask)
+                    
+                    # Save rwa image
                     os.makedirs(os.path.join(save_directory, f, sf, "img/"), exist_ok=True)
-                    saveimg = cv2.imread(os.path.join(main_directory, f, sf, "img/", raw), 0)
-                    cv2.imwrite(os.path.join(save_directory, f, sf, "img/", raw), saveimg)
+                    saveimg = cv2.imread(os.path.join(main_directory, f, sf, "img/", "NormIP_"+str(idx)+".png"), 0)
+                    cv2.imwrite(os.path.join(save_directory, f, sf, "img/", "NormIP_"+str(idx)+".png"), saveimg)
+                
+            else:
+                # Get index
+                idx = masks.split('_')[1][:-4]
+                # Save mask
+                os.makedirs(os.path.join(save_directory, f, sf, "mask/"), exist_ok=True) # create save directory
+                cv2.imwrite(os.path.join(save_directory, f, sf, "mask/", masks), mask) # save in save directory
+                # Save raw
+                os.makedirs(os.path.join(save_directory, f, sf, "img/"), exist_ok=True)
+                saveimg = cv2.imread(os.path.join(main_directory, f, sf, "img/", "NormIP_"+str(idx)+".png"), 0)
+                cv2.imwrite(os.path.join(save_directory, f, sf, "img/", "NormIP_"+str(idx)+".png"), saveimg)
+                

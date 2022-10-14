@@ -48,15 +48,15 @@ with open(f'{MODELNAME}'.replace(".", "_").replace(":","_")+".yaml", 'w') as fil
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=True
+Debug_MODE=False
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/train/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
     VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
     VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
 
@@ -106,7 +106,7 @@ def main(cfg):
     loss_fn2 =nn.BCEWithLogitsLoss()
     WEIGHT_DECAY=cfg.hyperparameters.weight_decay
     
-    wandb.config = {
+    wandb.config.update({
     "learning_rate" : LEARNING_RATE,
     "Batch_size" : BATCH_SIZE,
     "epochs" : NUM_EPOCHS,
@@ -114,7 +114,8 @@ def main(cfg):
     "Num_workers" : NUM_WORKERS,
     "Optimizer" : "ADAM",
     "loss" : "BCE",
-    }
+    "dataset" : TRAIN_IMG_DIR,
+    })
 
     #Transformation on train set
     train_transform = A.Compose([

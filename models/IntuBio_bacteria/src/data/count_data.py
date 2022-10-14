@@ -3,7 +3,7 @@ import numpy as np
 import cv2 
 
 # Main image directory
-main_directory="/work3/s174182/debug/Annotated_segmentation_patch/train/"
+main_directory="/work3/s174182/debug/Annotated_segmentation_patch_balanced/train/"
 save_prob = 0.1
 # Get in the main directory and go through the samples
 folders=os.listdir(main_directory)
@@ -26,15 +26,8 @@ for f in folders:
 
             if cv2.imread(os.path.join(main_directory, f, sf, "mask/", masks), 0).sum() < 1:
                 count_blacks += 1
-            
-            rng_num = np.random.uniform(low=0.0, high=1.0)
-            if rng_num > save_prob:
-                continue
-            
-            else:
-                count_blacks_balanced += 1
+
 
 print(f"{count_blacks} images with no bacteria")
 print(f"{count_all} images in total" )
-print(f"{count_blacks/count_all}% images with no bacteria")
-print(f"{count_blacks_balanced/count_all}% images with no bacteria after balance")
+print(f"{count_blacks/count_all * 100:.2f}% images with no bacteria")
