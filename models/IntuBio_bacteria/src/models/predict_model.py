@@ -51,11 +51,10 @@ with torch.no_grad():
             preds = (preds>0.5).float()
             pred_patches.append(preds)
 
-#pred_patches = np.array(pred_patches)
+
 
 
 pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
-print(pred_patches[0].shape)
 pred_patches_reshaped = np.reshape(pred_patches, (patches.shape[0], patches.shape[1], DOWNSCALE,DOWNSCALE) )
 reconstructed_image = unpatchify(pred_patches_reshaped, img.shape)
 reconstructed_image = reconstructed_image[:img_orig.shape[0],:img_orig.shape[1]]
