@@ -20,6 +20,7 @@ from utils import (load_checkpoint,
                     check_accuracy,
                     save_predictions_as_imgs,
                     IoULoss,
+                    FocalLoss,
                     )
 import os
 import hydra
@@ -57,12 +58,12 @@ if Debug_MODE:
 else:
     TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
     TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
-    VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
-    VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
+    VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
+    VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler):
+def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -74,7 +75,7 @@ def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = loss_fn(predictions, targets)+1/4*loss_fn2(predictions, targets)
+            loss = loss_fn(predictions, targets)+0*loss_fn2(predictions, targets)
                 
             # Backward probagation
             optimizer.zero_grad()
@@ -102,20 +103,11 @@ def main(cfg):
     BATCH_SIZE = cfg.hyperparameters.batch_size
     NUM_EPOCHS = cfg.hyperparameters.num_epochs
     NUM_WORKERS = cfg.hyperparameters.num_workers
-    loss_fn = IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    loss_fn = FocalLoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
     loss_fn2 =nn.BCEWithLogitsLoss()
     WEIGHT_DECAY=cfg.hyperparameters.weight_decay
-    
-    wandb.config.update({
-    "learning_rate" : LEARNING_RATE,
-    "Batch_size" : BATCH_SIZE,
-    "epochs" : NUM_EPOCHS,
-    "Weight_decay" : WEIGHT_DECAY,
-    "Num_workers" : NUM_WORKERS,
-    "Optimizer" : "ADAM",
-    "loss" : "BCE",
-    "dataset" : TRAIN_IMG_DIR,
-    })
+    # initialize wand
+    wandb.init(config=cfg)
 
     #Transformation on train set
     train_transform = A.Compose([
@@ -138,6 +130,8 @@ def main(cfg):
     model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
     #model.apply(weights_init)
     
+    # Set wandb to watch the model
+    wandb.watch(model, log_freq=100)
 
     # If we load model, load the checkpoint
     if LOAD_MODEL:
@@ -176,7 +170,7 @@ def main(cfg):
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
