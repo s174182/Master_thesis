@@ -24,6 +24,7 @@ from utils import (load_checkpoint,
                     )
 import os
 import hydra
+from hydra import compose, initialize
 from datetime import datetime
 import yaml
 import wandb
@@ -35,21 +36,17 @@ MODELNAME= str(datetime.now())+".pth"
 #Add model name to yaml file and create a copy
 stream = open("basic.yaml", 'r')
 my_dict = yaml.full_load(stream)
-# Initialize W and B
 
-wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio")
 
 cpy = my_dict
 cpy["modelname"]=MODELNAME
 with open(f'{MODELNAME}'.replace(".", "_").replace(":","_")+".yaml", 'w') as file:
     documents = yaml.dump(cpy, file)
 
-
-
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=False
+Debug_MODE=True
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
@@ -75,7 +72,7 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = loss_fn(predictions, targets)+0*loss_fn2(predictions, targets)
+            loss = (1/2)*loss_fn(predictions, targets)+(1/2)*loss_fn2(predictions, targets)
                 
             # Backward probagation
             optimizer.zero_grad()
@@ -99,15 +96,17 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
 @hydra.main(version_base="1.2", config_path="../../",config_name="basic.yaml")
 def main(cfg):
     #Hyperparameters
-    LEARNING_RATE = cfg.hyperparameters.learning_rate
-    BATCH_SIZE = cfg.hyperparameters.batch_size
-    NUM_EPOCHS = cfg.hyperparameters.num_epochs
-    NUM_WORKERS = cfg.hyperparameters.num_workers
-    loss_fn = FocalLoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    hparams = cfg.hyperparameters
+    LEARNING_RATE = hparams.learning_rate
+    BATCH_SIZE = hparams.batch_size
+    NUM_EPOCHS = hparams.num_epochs
+    NUM_WORKERS = hparams.num_workers
+    loss_fn = IoULoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
     loss_fn2 =nn.BCEWithLogitsLoss()
-    WEIGHT_DECAY=cfg.hyperparameters.weight_decay
-    # initialize wand
-    wandb.init(config=cfg)
+    WEIGHT_DECAY=hparams.weight_decay
+    # initialize wand, set sweep id
+    # Initialize W and B
+    wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", config=cfg)
 
     #Transformation on train set
     train_transform = A.Compose([
@@ -136,10 +135,13 @@ def main(cfg):
     # If we load model, load the checkpoint
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
-    
-    
+
     #writer.add_scalar("Loss function", "IoULoss")
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+    if hparams.optimizer == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+    elif hparams.optimizer == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+
     gamma = 0.9
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
     
@@ -174,9 +176,9 @@ def main(cfg):
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
-        wandb.log({'Training loss': train_loss,
-                   'Validation loss': val_loss,
-                   'Dice score': dice_score})
+        wandb.log({'Training_loss': train_loss,
+                   'Validation_loss': val_loss,
+                   'Dice_score': dice_score})
 
 
         if dice_score>best_score:
