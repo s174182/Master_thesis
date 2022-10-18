@@ -33,16 +33,6 @@ import wandb
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 MODELNAME= str(datetime.now())+".pth"
 
-#Add model name to yaml file and create a copy
-stream = open("basic.yaml", 'r')
-my_dict = yaml.full_load(stream)
-
-
-cpy = my_dict
-cpy["modelname"]=MODELNAME
-with open(f'{MODELNAME}'.replace(".", "_").replace(":","_")+".yaml", 'w') as file:
-    documents = yaml.dump(cpy, file)
-
 PIN_MEMORY = False
 LOAD_MODEL = False
 
@@ -69,13 +59,15 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
             data = data.float().to(device=DEVICE)
             targets = targets.float().unsqueeze(1).to(device=DEVICE)
 
+            # Backward probagation  
+            optimizer.zero_grad()
+
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = (1/2)*loss_fn(predictions, targets)+(1/2)*loss_fn2(predictions, targets)
+            loss = (3/4)*loss_fn(predictions, targets)+(1/4)*loss_fn2(predictions, targets)
                 
-            # Backward probagation
-            optimizer.zero_grad()
+            # Backward propagate and step optimizer
             loss.backward()
             optimizer.step()
             
@@ -93,21 +85,26 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
         
     return running_loss/len(loop)
 
-@hydra.main(version_base="1.2", config_path="../../",config_name="basic.yaml")
-def main(cfg):
-    #Hyperparameters
-    hparams = cfg.hyperparameters
-    LEARNING_RATE = hparams.learning_rate
-    BATCH_SIZE = hparams.batch_size
-    NUM_EPOCHS = hparams.num_epochs
-    NUM_WORKERS = hparams.num_workers
+def main():
+    # Load sweep configuration
+    with open('./config.yaml') as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
+    
+    # Initialize W and B
+    run = wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", config = config)
+
+    # Set configuration hyperparameters
+    LEARNING_RATE = wandb.config.lr
+    BATCH_SIZE = wandb.config.batch_size
+    WEIGHT_DECAY = wandb.config.wd
+    OPTIMIZER = wandb.config.optimizer
+    NUM_EPOCHS = 10
+    NUM_WORKERS = 1
     loss_fn = IoULoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
     loss_fn2 =nn.BCEWithLogitsLoss()
-    WEIGHT_DECAY=hparams.weight_decay
-    # initialize wand, set sweep id
-    # Initialize W and B
-    wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", config=cfg)
 
+    
+   
     #Transformation on train set
     train_transform = A.Compose([
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
@@ -137,13 +134,13 @@ def main(cfg):
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
 
     #writer.add_scalar("Loss function", "IoULoss")
-    if hparams.optimizer == 'adam':
+    if OPTIMIZER == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
-    elif hparams.optimizer == 'sgd':
+    elif OPTIMIZER == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
 
-    gamma = 0.9
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
+    #gamma = 0.9
+    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
     
     ###########################################
     # optimizer = optim.RMSprop(net.parameters(), lr=LEARNING_RATE, weight_decay=1e-8, momentum=0.9)
@@ -176,9 +173,10 @@ def main(cfg):
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
-        wandb.log({'Training_loss': train_loss,
-                   'Validation_loss': val_loss,
-                   'Dice_score': dice_score})
+        wandb.log({'training_loss': train_loss})
+        wandb.log({'validation_loss': val_loss})
+        wandb.log({'dice_score': dice_score})
+        wandb.log({'epoch': epoch})
 
 
         if dice_score>best_score:

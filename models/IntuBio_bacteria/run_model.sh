@@ -17,6 +17,11 @@ source ~/endpoint_segmentation/bin/activate
 # Get api key for wandb
 export WANDB_API_KEY=$(cat wandbkey.txt)
 wandb login #wandb login
-wandb sweep sweep.yaml
 
-python3 src/models/train_model.py
+# Start sweep from config.yaml
+touch sweep_id.txt
+$(wandb sweep config.yaml) > sweep_id.txt
+#wandb agent ${sweep_id}
+
+
+#python3 src/models/train_model.py
