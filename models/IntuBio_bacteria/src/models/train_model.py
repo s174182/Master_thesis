@@ -36,7 +36,7 @@ MODELNAME= str(datetime.now())+".pth"
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=True
+Debug_MODE=False
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
@@ -50,7 +50,7 @@ else:
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
+def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -87,11 +87,11 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler):
 
 def main():
     # Load sweep configuration
-    with open('./config.yaml') as file:
+    with open('config.yaml') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
     
     # Initialize W and B
-    run = wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", config = config)
+    run = wandb.init(allow_val_change=True,entity="intubio",config = config) #project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", 
 
     # Set configuration hyperparameters
     LEARNING_RATE = wandb.config.lr
@@ -169,7 +169,7 @@ def main():
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler, scheduler)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         

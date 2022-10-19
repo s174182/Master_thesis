@@ -6,7 +6,7 @@
 #BSUB -R "rusage[mem=32GB]"
 ## NUMBER OF CORES
 #BSUB -n 1 #IF USING ALL THREADS POSSIBLE
-#BSUB -W 22:00
+#BSUB -W 23:30
 #BSUB -N
 #BSUB -gpu "num=1"
 #BSUB -R "span[hosts=1]"
@@ -19,9 +19,9 @@ export WANDB_API_KEY=$(cat wandbkey.txt)
 wandb login #wandb login
 
 # Start sweep from config.yaml
-touch sweep_id.txt
-$(wandb sweep config.yaml) > sweep_id.txt
-#wandb agent ${sweep_id}
+NUM=5
+
+wandb agent --count $NUM s174182/Master_thesis-models_IntuBio_bacteria_src_models/vhv2aqmf
 
 
-#python3 src/models/train_model.py
+python3 src/models/train_model.py
