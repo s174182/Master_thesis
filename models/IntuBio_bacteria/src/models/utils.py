@@ -34,7 +34,7 @@ def get_loaders(train_dir, train_mask_dir, val_dir, val_mask_dir,
     
     # Validation dataloader
     valid_ds = BacteriaDataset(image_dir = val_dir, mask_dir=val_mask_dir, transform = val_transform)
-    valid_loader = DataLoader(valid_ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=False)
+    valid_loader = DataLoader(valid_ds, batch_size=1, num_workers=num_workers, pin_memory=pin_memory, shuffle=False)
     
     return train_loader, valid_loader
 
@@ -69,6 +69,7 @@ def check_accuracy(loader, model, device="cpu"):
             dice_score += (2 * (preds*y).sum())/((preds+y).sum() + 1e-8)
     
     # Print statements
+    print(len(loader))
     print(f"Got {num_correct}/{num_pixels} with accuracy {num_correct/num_pixels*100:.2f}")
     print(f"Dice score: {dice_score/len(loader)}")
     
