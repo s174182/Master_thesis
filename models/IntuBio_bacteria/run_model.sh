@@ -19,8 +19,6 @@ export WANDB_API_KEY=$(cat wandbkey.txt)
 wandb login #wandb login
 
 # Start sweep from config.yaml
-touch sweep_id.txt
-$(wandb sweep config.yaml) > sweep_id.txt
 #wandb agent ${sweep_id}
 
 
