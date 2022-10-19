@@ -2,6 +2,8 @@ import os
 import numpy as np
 import cv2 
 
+im1_name = 
+
 # Main image directory
 main_directory="/work3/s174182/debug/Annotated_segmentation_patch_balanced/train/"
 save_prob = 0.1

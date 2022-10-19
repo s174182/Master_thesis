@@ -15,4 +15,5 @@ source ~/endpoint_segmentation/bin/activate
 python3 -m pip install hydra-core --upgrade
 python3 -m pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
 python3 -m pip install -r requirements.txt
+python3 -m pip install focal-loss
 python3 -m pip install -U git+https://github.com/albumentations-team/albumentations
