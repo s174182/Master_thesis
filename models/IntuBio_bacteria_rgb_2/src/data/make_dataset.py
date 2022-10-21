@@ -49,7 +49,7 @@ class BacteriaDataset(Dataset):
     def __getitem__(self, index):
         # get image
         img_path = self.images[index]
-        image = np.array(Image.open(img_path).convert("L"))
+        image = np.array(Image.open(img_path))
 
         # get mask
         mask_path = self.masks[index]
