@@ -94,6 +94,7 @@ data/*
 *.pth
 *.err
 *.out
+
 wandb/*
 *.yaml
 # wandb key

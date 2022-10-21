@@ -19,5 +19,7 @@ source ~/endpoint_segmentation/bin/activate
 export WANDB_API_KEY=$(cat wandbkey.txt)
 
 wandb login #wandb login
+NUM=10
+wandb agent --count $NUM intubio/Master_thesis-models_IntuBio_bacteria_rgb_2_src_models/doc445z2 # sweep agent
 
 python3 ./src/models/train_model.py

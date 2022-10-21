@@ -29,8 +29,8 @@ step=256
 prob = 0.85
 
 # Flags - set True on the wanted flag to clean the data
-TRAIN = True
-VAL = False
+TRAIN = False
+VAL = True
 
 if TRAIN:
     # Main image directory
