@@ -33,11 +33,7 @@ MODELNAME= str(datetime.now())+".pth"
 
 
 # Initialize W and B
-
 wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio")
-
-
-
 
 
 PIN_MEMORY = False
@@ -45,19 +41,19 @@ LOAD_MODEL = False
 
 Debug_MODE=False
 if Debug_MODE:
-        TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
-        TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
-        VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
-        VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
+        TRAIN_IMG_DIR = "/work3/s174182/debug/RGB_method/train/"
+        TRAIN_MASK_DIR = "/work3/s174182/debug/RGB_method/train/"
+        VAL_IMG_DIR = "/work3/s174182/debug/RGB_method/val/"
+        VAL_MASK_DIR = "/work3/s174182/debug/RGB_method/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
-    VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
-    VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch/val/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced/train/"
+    VAL_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced/val/"
+    VAL_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced/val/"
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler):
+def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -90,27 +86,23 @@ def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler):
         
     return running_loss/len(loop)
 
-@hydra.main(version_base="1.2", config_path="../../",config_name="basic.yaml")
-def main(cfg):
-    #Hyperparameters
-    LEARNING_RATE = cfg.hyperparameters.learning_rate
-    BATCH_SIZE = cfg.hyperparameters.batch_size
-    NUM_EPOCHS = cfg.hyperparameters.num_epochs
-    NUM_WORKERS = cfg.hyperparameters.num_workers
-    loss_fn = IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
-    loss_fn2 =nn.BCEWithLogitsLoss()
-    WEIGHT_DECAY=cfg.hyperparameters.weight_decay
+def main():
+    # Load sweep configuration
+    with open('config.yaml') as file:
+        config = yaml.load(file, Loader=yaml.FullLoader)
     
-    wandb.config.update({
-    "learning_rate" : LEARNING_RATE,
-    "Batch_size" : BATCH_SIZE,
-    "epochs" : NUM_EPOCHS,
-    "Weight_decay" : WEIGHT_DECAY,
-    "Num_workers" : NUM_WORKERS,
-    "Optimizer" : "ADAM",
-    "loss" : "BCE",
-    "dataset" : TRAIN_IMG_DIR,
-    })
+    # Initialize W and B
+    run = wandb.init(allow_val_change=True,entity="intubio",config = config) #project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", 
+
+    # Set configuration hyperparameters
+    LEARNING_RATE = wandb.config.lr
+    BATCH_SIZE = wandb.config.batch_size
+    WEIGHT_DECAY = wandb.config.wd
+    OPTIMIZER = wandb.config.optimizer
+    NUM_EPOCHS = 10
+    NUM_WORKERS = 1
+    loss_fn = IoULoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
+    loss_fn2 =nn.BCEWithLogitsLoss()
 
     #Transformation on train set
     train_transform = A.Compose([
@@ -130,19 +122,24 @@ def main(cfg):
 
     
     # Create model, loss function, optimizer, loaders, scaler
-    model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
+    model = Unet(in_channels = 3, out_channels = 1).to(device=DEVICE)
     #model.apply(weights_init)
     
+    # Set wandb to watch the model
+    wandb.watch(model, log_freq=100)
 
     # If we load model, load the checkpoint
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth"), model)
-    
-    
+
     #writer.add_scalar("Loss function", "IoULoss")
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
-    gamma = 0.9
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
+    if OPTIMIZER == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+    elif OPTIMIZER == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+
+    #gamma = 0.9
+    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
     
     ###########################################
     # optimizer = optim.RMSprop(net.parameters(), lr=LEARNING_RATE, weight_decay=1e-8, momentum=0.9)
@@ -171,13 +168,14 @@ def main(cfg):
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn,loss_fn2, scaler, scheduler)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
-        wandb.log({'Training loss': train_loss,
-                   'Validation loss': val_loss,
-                   'Dice score': dice_score})
+        wandb.log({'training_loss': train_loss})
+        wandb.log({'validation_loss': val_loss})
+        wandb.log({'dice_score': dice_score})
+        wandb.log({'epoch': epoch})
 
 
         if dice_score>best_score:

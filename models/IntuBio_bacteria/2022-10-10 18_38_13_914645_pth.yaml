@@ -1,8 +1,0 @@
-hyperparameters:
-  batch_size: 1
-  learning_rate: 1e-3
-  lossfn: BCE
-  num_epochs: 15
-  num_workers: 1
-  weight_decay: 1e-4
-modelname: 2022-10-10 18:38:13.914645.pth

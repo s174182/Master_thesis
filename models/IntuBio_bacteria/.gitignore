@@ -94,6 +94,6 @@ data/*
 *.pth
 *.err
 *.out
-wand/*
-# wandb key
+*.yaml
+*.yml
 wandbkey.txt
