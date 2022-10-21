@@ -3,10 +3,14 @@ import numpy as np
 import cv2 
 
 # Main image directory
-main_directory="/work3/s174182/debug/Annotated_segmentation_patch_balanced/train/"
+main_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
 save_prob = 0.1
 # Get in the main directory and go through the samples
 folders=os.listdir(main_directory)
+# counter
+count_blacks = 0
+count_all = 0
+count_blacks_balanced = 0
 for f in folders:
     # Go through wells A-C
     sub_folders=os.listdir(os.path.join(main_directory,f))
@@ -16,10 +20,7 @@ for f in folders:
         #     break
         #     print(imgs)
 
-        # counter
-        count_blacks = 0
-        count_all = 0
-        count_blacks_balanced = 0
+        
         for masks in os.listdir(os.path.join(main_directory, f, sf, "mask/")):
             # count number of masks with no bacteria in them
             count_all += 1

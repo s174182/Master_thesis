@@ -19,9 +19,9 @@ export WANDB_API_KEY=$(cat wandbkey.txt)
 wandb login #wandb login
 
 # Start sweep from config.yaml
-NUM=5
+NUM=10
 
-wandb agent --count $NUM s174182/Master_thesis-models_IntuBio_bacteria_src_models/vhv2aqmf
+wandb agent --count $NUM s174182/Master_thesis-models_IntuBio_bacteria_src_models/77mj09at
 
 
 python3 src/models/train_model.py

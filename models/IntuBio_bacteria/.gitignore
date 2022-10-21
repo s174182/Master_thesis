@@ -89,11 +89,15 @@ target/
 .mypy_cache/
 
 
-# Folders
+# Folders and files
 data/*
 *.pth
 *.err
 *.out
-wand/*
+wandb/*
+*.yaml
 # wandb key
 wandbkey.txt
+
+#bash script
+run_model.sh
