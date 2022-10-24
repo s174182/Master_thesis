@@ -31,11 +31,6 @@ import wandb
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 MODELNAME= str(datetime.now())+".pth"
 
-
-# Initialize W and B
-wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio")
-
-
 PIN_MEMORY = False
 LOAD_MODEL = False
 
@@ -53,7 +48,7 @@ else:
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler):
+def train_fn(loader, model, optimizer, loss_fn):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -65,7 +60,7 @@ def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = loss_fn(predictions, targets)+1/4*loss_fn2(predictions, targets)
+            loss = loss_fn(predictions, targets)
                 
             # Backward probagation
             optimizer.zero_grad()
@@ -87,22 +82,20 @@ def train_fn(loader, model, optimizer, loss_fn,loss_fn2, scaler):
     return running_loss/len(loop)
 
 def main():
-    # Load sweep configuration
-    with open('config.yaml') as file:
+    # Load config
+    with open('basic.yaml') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
     
-    # Initialize W and B
-    run = wandb.init(allow_val_change=True,entity="intubio",config = config) #project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", 
+    wandb.init(entity='intubio', config=config)
 
     # Set configuration hyperparameters
-    LEARNING_RATE = wandb.config.lr
-    BATCH_SIZE = wandb.config.batch_size
-    WEIGHT_DECAY = wandb.config.wd
-    OPTIMIZER = wandb.config.optimizer
-    NUM_EPOCHS = 10
-    NUM_WORKERS = 1
-    loss_fn = IoULoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
-    loss_fn2 =nn.BCEWithLogitsLoss()
+    LEARNING_RATE = config['hyperparameters']['learning_rate']
+    BATCH_SIZE = config['hyperparameters']['batch_size']
+    WEIGHT_DECAY = config['hyperparameters']['weight_decay']
+    OPTIMIZER = config['hyperparameters']['optimizer']
+    NUM_EPOCHS = config['hyperparameters']['num_epochs']
+    NUM_WORKERS = config['hyperparameters']['num_workers']
+    loss_fn =nn.BCEWithLogitsLoss() # Binary cross entropy
 
     #Transformation on train set
     train_transform = A.Compose([
@@ -134,9 +127,9 @@ def main():
 
     #writer.add_scalar("Loss function", "IoULoss")
     if OPTIMIZER == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9) # add more params if wanted
     elif OPTIMIZER == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
+        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9) # add more params if wanted
 
     #gamma = 0.9
     #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
@@ -163,12 +156,12 @@ def main():
     
 #    writer.add_graph(model, iter(train_loader).next()[0].to(device=DEVICE))
 
-    scaler = torch.cuda.amp.GradScaler()
+    #scaler = torch.cuda.amp.GradScaler()
     best_score=0
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
