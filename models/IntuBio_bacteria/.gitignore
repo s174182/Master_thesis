@@ -102,3 +102,4 @@ wandbkey.txt
 
 #bash script
 run_model.sh
+run_sweep.sh

@@ -20,9 +20,9 @@ wandb login #wandb login
 
 # Start sweep from config.yaml
 
-NUM=10
+#NUM=10
 
-wandb agent --count $NUM s174182/Master_thesis-models_IntuBio_bacteria_src_models/77mj09at
+#wandb agent --count $NUM s174182/Master_thesis-models_IntuBio_bacteria_src_models/77mj09at
 
 
 
