@@ -98,10 +98,12 @@ def main():
     loss_fn =nn.BCEWithLogitsLoss() # Binary cross entropy
 
     #Transformation on train set
+    # Mean and std can be calculated in mean_std found in subfolder data
     train_transform = A.Compose([
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
+        A.augmentations.transforms.Normalize (mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=255.0, always_apply=False, p=1.0)
         ToTensorV2(),
         ])
     
@@ -110,6 +112,7 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
+        A.augmentations.transforms.Normalize (mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=255.0, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
 

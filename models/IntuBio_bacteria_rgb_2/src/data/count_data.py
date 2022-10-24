@@ -3,13 +3,16 @@ import numpy as np
 import cv2 
 
 # Main image directory
-main_directory="/work3/s174182/train_data/RGB_method_balanced/val/"
+main_directory="/work3/s174182/train_data/RGB_method_balanced_1/train/"
 count_blacks = 0
 count_all = 0
 count_blacks_balanced = 0
 # Get in the main directory and go through the samples
 folders=os.listdir(main_directory)
+count_list=[0]*len(folders)
+k=0
 for f in folders:
+
     # Go through wells A-C
     sub_folders=os.listdir(os.path.join(main_directory,f))
     for sf in sub_folders:
@@ -26,8 +29,11 @@ for f in folders:
 
             if cv2.imread(os.path.join(main_directory, f, sf, "mask/", masks), 0).sum() < 1:
                 count_blacks += 1
+                count_list[k] +=1
+    k+=1
 
 
 print(f"{count_blacks} images with no bacteria")
 print(f"{count_all} images in total" )
 print(f"{count_blacks/count_all * 100:.2f}% images with no bacteria")
+print(dict(zip(folders,count_list)))

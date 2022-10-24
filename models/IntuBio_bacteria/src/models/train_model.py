@@ -50,7 +50,7 @@ else:
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler):
+def train_fn(loader, model, optimizer, loss_fn, loss_fn2=None):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -65,17 +65,16 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = (3/4)*loss_fn(predictions, targets)+(1/4)*loss_fn2(predictions, targets)
+            if loss_fn2!=None:
+                loss = (3/4)*loss_fn(predictions, targets)+(1/4)*loss_fn2(predictions, targets)
+            else:
+                loss = loss_fn(predictions, targets)
                 
             # Backward propagate and step optimizer
             loss.backward()
             optimizer.step()
             
-            ##### SCALER #####
-
-            # scaler.scale(loss).backward()
-            # scaler.step(optimizer)
-            # scaler.update()
+            
             
             # Update tqdm 
             pbar.set_postfix(loss=loss.item())
@@ -87,21 +86,41 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler):
 
 def main():
     # Load sweep configuration
-    with open('config.yaml') as file:
+    with open('basic.yaml') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)
     
     # Initialize W and B
-    run = wandb.init(allow_val_change=True,entity="intubio",config = config) #project='{MODELNAME}'.replace(".", "_").replace(":","_"), entity="intubio", 
+    run = wandb.init(project='{MODELNAME}'.replace(".", "_").replace(":","_"),entity="intubio")
 
-    # Set configuration hyperparameters
-    LEARNING_RATE = wandb.config.lr
-    BATCH_SIZE = wandb.config.batch_size
-    WEIGHT_DECAY = wandb.config.wd
-    OPTIMIZER = wandb.config.optimizer
-    NUM_EPOCHS = 10
-    NUM_WORKERS = 1
-    loss_fn = IoULoss()#IoULoss()# if cfg.hyperparameters.lossfn=="IoU" else nn.BCEWithLogitsLoss() # For flere klasse, ændr til CELoss
-    loss_fn2 =nn.BCEWithLogitsLoss()
+    # # Set configuration hyperparameters
+    # LEARNING_RATE = wandb.config.lr
+    # BATCH_SIZE = wandb.config.batch_size
+    # WEIGHT_DECAY = wandb.config.wd
+    # OPTIMIZER = wandb.config.optimizer
+    # NUM_EPOCHS = 10
+    # NUM_WORKERS = 1
+        # Set configuration hyperparameters
+    LEARNING_RATE = config['hyperparameters']['learning_rate']
+    BATCH_SIZE = config['hyperparameters']['batch_size']
+    WEIGHT_DECAY = config['hyperparameters']['weight_decay']
+    OPTIMIZER = config['hyperparameters']['optimizer']
+    NUM_EPOCHS = config['hyperparameters']['num_epochs']
+    NUM_WORKERS = config['hyperparameters']['num_workers']
+    wandb.config.update({
+    "learning_rate" : LEARNING_RATE,
+    "Batch_size" : BATCH_SIZE,
+    "epochs" : NUM_EPOCHS,
+    "Weight_decay" : WEIGHT_DECAY,
+    "Num_workers" : NUM_WORKERS,
+    "Optimizer" : "ADAM",
+    "loss" : "BCE",
+    "dataset" : TRAIN_IMG_DIR,
+    })
+
+
+
+    loss_fn2 = None # IoULoss()
+    loss_fn =nn.BCEWithLogitsLoss()
 
     
    
@@ -110,6 +129,7 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
+        A.augmentations.transforms.Normalize (mean=(145.7), std=(46.27), max_pixel_value=255.0, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
     
@@ -118,11 +138,12 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
+        A.augmentations.transforms.Normalize (mean=(145.7), std=(46.27), max_pixel_value=255.0, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
 
     
-    # Create model, loss function, optimizer, loaders, scaler
+    # Create model, loss function, optimizer, loaders
     model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
     #model.apply(weights_init)
     
@@ -139,18 +160,7 @@ def main():
     elif OPTIMIZER == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
 
-    #gamma = 0.9
-    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
     
-    ###########################################
-    # optimizer = optim.RMSprop(net.parameters(), lr=LEARNING_RATE, weight_decay=1e-8, momentum=0.9)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
-    # grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
-    # criterion = nn.CrossEntropyLoss()
-    # global_step = 0
-    ###########################################
-
-
     train_loader, val_loader = get_loaders(
         TRAIN_IMG_DIR,
         TRAIN_MASK_DIR,
@@ -162,21 +172,22 @@ def main():
         num_workers=NUM_WORKERS,
       )
     
-#    writer.add_graph(model, iter(train_loader).next()[0].to(device=DEVICE))
 
-    scaler = torch.cuda.amp.GradScaler()
+
     best_score=0
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, scaler)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2=loss_fn2)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
-        
+
+
         wandb.log({'training_loss': train_loss})
         wandb.log({'validation_loss': val_loss})
         wandb.log({'dice_score': dice_score})
         wandb.log({'epoch': epoch})
+
 
 
         if dice_score>best_score:
