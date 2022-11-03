@@ -41,14 +41,14 @@ if Debug_MODE:
         VAL_IMG_DIR = "/work3/s174182/debug/RGB_method/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/RGB_method/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced/train/"
-    VAL_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced/val/"
-    VAL_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced/val/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced_1/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced_1/train/"
+    VAL_IMG_DIR = "/work3/s174182/train_data/RGB_method_balanced_1/val/"
+    VAL_MASK_DIR = "/work3/s174182/train_data/RGB_method_balanced_1/val/"
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn):
+def train_fn(loader, model, optimizer, loss_fn, loss_fn2, w_loss1, w_loss2):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -60,7 +60,7 @@ def train_fn(loader, model, optimizer, loss_fn):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            loss = loss_fn(predictions, targets)
+            loss = w_loss1*loss_fn(predictions, targets) + w_loss2*loss_fn2(predictions, targets)
                 
             # Backward probagation
             optimizer.zero_grad()
@@ -95,7 +95,12 @@ def main():
     OPTIMIZER = config['hyperparameters']['optimizer']
     NUM_EPOCHS = config['hyperparameters']['num_epochs']
     NUM_WORKERS = config['hyperparameters']['num_workers']
-    loss_fn =nn.BCEWithLogitsLoss() # Binary cross entropy
+    loss_fn = nn.BCEWithLogitsLoss() # Binary cross entropy
+    loss_fn2 = IoULoss() # IoU loss
+
+    # Weight of loss functions
+    w_loss1 = config['hyperparameters']['w_loss1']
+    w_loss2 = config['hyperparameters']['w_loss2']
 
     #Transformation on train set
     # Mean and std can be calculated in mean_std found in subfolder data
@@ -103,7 +108,7 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
-        A.augmentations.transforms.Normalize (mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=255.0, always_apply=False, p=1.0)
+        A.augmentations.transforms.Normalize(mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=1, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
     
@@ -112,7 +117,7 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
-        A.augmentations.transforms.Normalize (mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=255.0, always_apply=False, p=1.0),
+        A.augmentations.transforms.Normalize(mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=1, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
 
@@ -126,13 +131,13 @@ def main():
 
     # If we load model, load the checkpoint
     if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoint.pth"), model)
+        load_checkpoint(torch.load("2022-10-25 12:40:16.459699.pth"), model)
 
     #writer.add_scalar("Loss function", "IoULoss")
     if OPTIMIZER == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9) # add more params if wanted
+        optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
     elif OPTIMIZER == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY, momentum=0.9) # add more params if wanted
+        optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY) # add more params if wanted
 
     #gamma = 0.9
     #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma)# Learning rate scheduler
@@ -164,7 +169,7 @@ def main():
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
-        train_loss = train_fn(train_loader, model, optimizer, loss_fn)         
+        train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, w_loss1, w_loss2)         
         # check accuracy
         dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
