@@ -26,26 +26,26 @@ N=512
 step=256
 
 # save probability 1-prob
-prob = 0.85
+prob = 1
 
 # Flags - set True on the wanted flag to clean the data
-TRAIN = True
-VAL = False
+TRAIN = False
+VAL = True
 
 if TRAIN:
     # Main image directory
-    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch/train/"
+    main_directory="/work3/s174182/train_data/RGB_method_balanced_1/train/"
 
     # Save directory to
-    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    save_directory="/work3/s174182/train_data/RGB_method_balanced_1_noemptymasks/train/"
     VAL = False
 
 elif VAL:
     # Main image directory
-    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch/val/"
+    main_directory="/work3/s174182/train_data/RGB_method_balanced_1/val/"
 
     # Save directory to
-    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
+    save_directory="/work3/s174182/train_data/RGB_method_balanced_1_noemptymasks/val/"
     TRAIN = False
     
 # Indices to save
@@ -65,7 +65,7 @@ for f in folders:
                 # If the image is black, draw uniform random number, 
                 # and add mask + raw image to save folder if that number is above prob
                 rng_num = np.random.uniform(low=0.0, high=1.0)
-                if rng_num < prob:
+                if rng_num <= prob:
                     continue
                 
                 else:
