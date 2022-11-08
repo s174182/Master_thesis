@@ -4,8 +4,7 @@ import cv2
 
 
 # Main image directory
-main_directory="/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
-save_prob = 0.1
+main_directory="/work3/s174182/train_data/no_padding_no_empty_maks/train/"
 # Get in the main directory and go through the samples
 folders=os.listdir(main_directory)
 # counter
