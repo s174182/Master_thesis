@@ -3,7 +3,7 @@ import numpy as np
 import cv2 
 
 # Main image directory
-main_directory="/work3/s174182/train_data/RGB_method_balanced_1/train/"
+main_directory="/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/train/"
 count_blacks = 0
 count_all = 0
 count_blacks_balanced = 0

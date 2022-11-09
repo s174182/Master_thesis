@@ -21,31 +21,27 @@ import os
 import numpy as np
 from PIL import Image
 
-# NxN image patches with stepsize 256, means 50% overlap
-N=512
-step=256
-
 # save probability 1-prob
-prob = 1
+prob = 1.1
 
 # Flags - set True on the wanted flag to clean the data
-TRAIN = True
-VAL = False
+TRAIN = False
+VAL = True
 
 if TRAIN:
     # Main image directory
-    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/train/"
+    main_directory="/work3/s174182/train_data/no_padding/train/"
 
     # Save directory to
-    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced_no_empty_masks/train/"
+    save_directory="/work3/s174182/train_data/no_padding_no_empty_maks/train/"
     VAL = False
 
 elif VAL:
     # Main image directory
-    main_directory="/work3/s174182/train_data/Annotated_segmentation_patch_balanced/val/"
+    main_directory="/work3/s174182/train_data/no_padding/val/"
 
     # Save directory to
-    save_directory="/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
+    save_directory="/work3/s174182/train_data/no_padding_no_empty_maks/val/"
     TRAIN = False
     
 # Indices to save

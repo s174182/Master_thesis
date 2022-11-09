@@ -43,10 +43,10 @@ if Debug_MODE:
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/train/"
-    VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
-    VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
+    TRAIN_IMG_DIR = "/work3/s174182/train_data/no_padding_no_empty_mask/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/train_data/no_padding_no_empty_mask/train/"
+    VAL_IMG_DIR = "/work3/s174182/train_data/no_padding_no_empty_mask/val/"
+    VAL_MASK_DIR = "/work3/s174182/train_data/no_padding_no_empty_mask/val/"
 
 
 # Train function does one epoch
