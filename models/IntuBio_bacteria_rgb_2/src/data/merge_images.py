@@ -13,9 +13,9 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 from scipy import ndimage
-main_directory="D:/test_data"
+main_directory="/work3/s174182/Orig_dataset/Orig_data_filtered/"
 
-Save_directory="D:/test"
+Save_directory="/work3/s174182/RGB_method_nopad/"
 
 folders=os.listdir(main_directory)
 
@@ -38,8 +38,8 @@ def normimg(img,imgref):
     return imnorm        
 
 
-def patches(norm_img,path,Save_directory,N=512,step=256):
-    mask=np.array(cv2.imread(os.path.join(path,"Mask_1.png"),0))
+def patches(norm_img,path,Save_directory,N=572,step=388):
+    mask=np.array(cv2.imread(os.path.join(path,"mask_1.png"),0))
     n,m=mask.shape[0],mask.shape[1]
     
     # crop image such that 256 stepsize can be applied
