@@ -23,7 +23,7 @@ import sys
 import pdb
 sys.path.append('../data/')
 from helpers import ROI
-from utils import load_checkpoint
+from utils import (load_checkpoint, get_patches, recon_im)
 
 def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     print(img_path)
@@ -40,27 +40,25 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     img_pad[148:5319+148:,136:(6119+136)]=img_orig
     
     # Create the patches
-    patches=patchify(img_pad,(572,572),step=388)
+    patches=patchify(img_pad,(572,572),step=388//2)
     
     # Loop through and predict each patch
     pred_patches=[]
     with torch.no_grad():
         for i in range(patches.shape[0]):
             for j in range (patches.shape[1]):
+                print(i,j)
                 x = transform(patches[i, j,:,:])
                 x = x[None,:].float().to(device=DEVICE) #as its not a batch do a dummy expansion
                 preds = model(x)
                 preds = torch.sigmoid(preds)
-                preds = (preds>0.75).float()
                 pred_patches.append(preds)
 
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
-    pred_patches_reshaped = np.reshape(pred_patches, (patches.shape[0], patches.shape[1], 388,388) )
-   
-    pred_mask = unpatchify(pred_patches_reshaped, (14*388,16*388))
-    pred_mask=pred_mask[56:5319+56,44:6119+44].astype(np.uint8) #crop back to original mask shape
-    #pred_mask = ROI(pred_mask,img_orig).astype(np.uint8)
-    #Metrics
+    pred_mask = recon_im(pred_patches,5616,6392,1,194) #reconstruct the patches and average overlapping patches
+    pred_mask= (pred_mask>0.8)
+    pred_mask = pred_mask[56:5319+56,44:6119+44].astype(np.uint8) #crop back to original mask shape
+    
     TP = np.sum(np.logical_and(pred_mask == 1, mask == 1))
     TN = np.sum(np.logical_and(pred_mask == 0, mask == 0))
     FN = np.sum(np.logical_and(pred_mask == 0, mask == 1))   
@@ -82,8 +80,8 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
         
     return Metrics
 
-test_path="/work3/s174182/Test_data/"
-model_name="2022-11-07 16:00:27.345951"
+test_path="C:/Users/Jonat/OneDrive/Documents/DTU fag/Master_speciale/IntuBio_dataset/Test_data/"
+model_name="2022-11-07 13_07_30.684089"
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
 
