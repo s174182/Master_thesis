@@ -25,3 +25,20 @@ def ROI(mask,img):
             output=cv2.bitwise_or(output,componentMask)
             
     return output
+def normimg(img,imgref):
+    IthrMask=18
+    imnorm=(170*(img-10).astype(float)/(imgref-10).astype(float))
+    imnorm[imnorm>255]=255
+    imnorm=imnorm.astype(np.uint8)
+
+    
+    th, im_th = cv2.threshold(imgref, IthrMask, 255, cv2.THRESH_BINARY);
+    im_th=ndimage.binary_fill_holes(im_th,structure =None,output =None,origin=0).astype(np.uint8)
+    
+    kernel = np.ones((25, 25), np.uint8)
+      
+    # # Using cv2.erode() method 
+    ROI = cv2.erode(im_th, kernel)
+
+    imnorm[ROI==0]=0
+    return imnorm 
