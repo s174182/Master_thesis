@@ -51,7 +51,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
                 x = x[None,:].float().to(device=DEVICE) #as its not a batch do a dummy expansion
                 preds = model(x)
                 preds = torch.sigmoid(preds)
-                preds = (preds>0.75).float()
+                preds = (preds>0.5).float()
                 pred_patches.append(preds)
 
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
@@ -59,7 +59,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
    
     pred_mask = unpatchify(pred_patches_reshaped, (14*388,16*388))
     pred_mask=pred_mask[56:5319+56,44:6119+44].astype(np.uint8) #crop back to original mask shape
-    #pred_mask = ROI(pred_mask,img_orig).astype(np.uint8)
+    pred_mask = ROI(pred_mask,img_orig).astype(np.uint8)
     #Metrics
     TP = np.sum(np.logical_and(pred_mask == 1, mask == 1))
     TN = np.sum(np.logical_and(pred_mask == 0, mask == 0))
@@ -75,7 +75,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
 
     save_folder="_".join(img_path.split("/")[-3:-1])
     
-    predicted_img=cv2.hconcat([img_orig,pred_mask])
+    predicted_img=cv2.hconcat([img_orig,pred_mask*255])
     os.makedirs("../../data/predictions/"+model_name,exist_ok=True)
     
     cv2.imwrite("../../data/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
@@ -83,7 +83,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     return Metrics
 
 test_path="/work3/s174182/Test_data/"
-model_name="2022-11-07 16:00:27.345951"
+model_name="2022-11-07 13:07:30.684089"
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
 
@@ -124,5 +124,5 @@ rec=rec/N
 
 Preds["Average_metrics"]={"dice":dice,"Accuracy":acc,"Specificity":spec,"Precision":prec,"Recall":rec}
 
-with open(f'../../reports/metrics{model_name}.json','w') as fp:
+with open(f'../../reports/metrics{model_name}.json'.replace(":","_"),'w') as fp:
     json.dump(Preds,fp)
