@@ -47,7 +47,6 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     with torch.no_grad():
         for i in range(patches.shape[0]):
             for j in range (patches.shape[1]):
-                print(i,j)
                 x = transform(patches[i, j,:,:])
                 x = x[None,:].float().to(device=DEVICE) #as its not a batch do a dummy expansion
                 preds = model(x)
