@@ -59,6 +59,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
     heatmap_copy=pred_mask
     pred_mask= (pred_mask>0.9).astype(np.uint8)
     
+
     TP = np.sum(np.logical_and(pred_mask == 1, mask == 1))
     TN = np.sum(np.logical_and(pred_mask == 0, mask == 0))
     FN = np.sum(np.logical_and(pred_mask == 0, mask == 1))   
@@ -71,12 +72,14 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
     Recall= TP/(TP+FN+1e-8)
     Metrics={"dice":dice,"Accuracy":ACC,"Specificity":Spec,"Precision":Prec,"Recall":Recall}
     
+
     #### SAVE IMAGE #####
     save_folder="_".join(img_path.split("/")[-3:-1])
     img_orig=cv2.merge((img_orig,img_orig,img_orig))
     shapes=np.zeros((N,M,3)).astype(np.uint8)
     shapes[pred_mask==1,0]=255;shapes[pred_mask==1,1]=255 # create a yellow filter for the predicted masks
     predicted_img = cv2.addWeighted(img_orig,1,shapes,0.25,0.1)
+
     os.makedirs("../../data/predictions/"+model_name,exist_ok=True)
    
     cv2.imwrite("../../data/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
@@ -87,8 +90,10 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
     
     return Metrics
 
-test_path="C:/Users/Jonat/OneDrive/Documents/DTU fag/Master_speciale/IntuBio_dataset/Test_data/"
-model_name="2022-11-07 13_07_30.684089"
+
+test_path="/work3/s174182/Test_data/"
+model_name="2022-11-07 13:07:30.684089"
+
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
 
@@ -130,5 +135,5 @@ rec=rec/N
 
 Preds["Average_metrics"]={"dice":dice,"Accuracy":acc,"Specificity":spec,"Precision":prec,"Recall":rec}
 
-with open(f'../../reports/metrics{model_name}.json','w') as fp:
+with open(f'../../reports/metrics{model_name}.json'.replace(":","_"),'w') as fp:
     json.dump(Preds,fp)
