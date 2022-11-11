@@ -24,14 +24,13 @@ import pdb
 sys.path.append('../data/')
 from helpers import ROI
 from utils import (load_checkpoint, get_patches, recon_im)
+import seaborn as sn
 
-def evaluate(img_path,mask_path,model,DEVICE='cpu'):
-    print(img_path)
-    transform = transforms.ToTensor()
-        
+def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
+    transform = transforms.ToTensor()  
     # Read image and convert from BGR to RGB
     img_orig=cv2.imread(img_path,0)
-    
+    N,M=np.shape(img_orig)
     mask=cv2.imread(mask_path,0)
     mask[mask>1]=1
     
@@ -40,7 +39,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     img_pad[148:5319+148:,136:(6119+136)]=img_orig
     
     # Create the patches
-    patches=patchify(img_pad,(572,572),step=388//2)
+    patches=patchify(img_pad,(572,572),step=step)
     
     # Loop through and predict each patch
     pred_patches=[]
@@ -54,9 +53,10 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
                 pred_patches.append(preds)
 
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
-    pred_mask = recon_im(pred_patches,5616,6392,1,194) #reconstruct the patches and average overlapping patches
-    pred_mask= (pred_mask>0.8)
-    pred_mask = pred_mask[56:5319+56,44:6119+44].astype(np.uint8) #crop back to original mask shape
+    pred_mask = recon_im(pred_patches,5616,6392,1,step) #reconstruct the patches and average overlapping patches
+    pred_mask = pred_mask[56:5319+56,44:6119+44] #crop back to original mask shape
+    heatmap_copy=pred_mask
+    pred_mask= (pred_mask>0.9).astype(np.uint8)
     
 
     TP = np.sum(np.logical_and(pred_mask == 1, mask == 1))
@@ -70,14 +70,23 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu'):
     Prec = TP/(TP+FP+1e-8)
     Recall= TP/(TP+FN+1e-8)
     Metrics={"dice":dice,"Accuracy":ACC,"Specificity":Spec,"Precision":Prec,"Recall":Recall}
+    
 
+    #### SAVE IMAGE #####
     save_folder="_".join(img_path.split("/")[-3:-1])
-    
-    predicted_img=cv2.hconcat([img_orig,pred_mask*255])
+    img_orig=cv2.merge((img_orig,img_orig,img_orig))
+    shapes=np.zeros((N,M,3)).astype(np.uint8)
+    shapes[pred_mask==1,0]=255;shapes[pred_mask==1,1]=255 # create a yellow filter for the predicted masks
+    predicted_img = cv2.addWeighted(img_orig,1,shapes,0.25,0.1)
+
     os.makedirs("../../data/predictions/"+model_name,exist_ok=True)
-    
+   
     cv2.imwrite("../../data/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
-        
+    
+    svm = sn.heatmap(heatmap_copy,yticklabels=False,xticklabels=False)
+    figure = svm.get_figure()    
+    figure.savefig("../../data/predictions/"+model_name+"/"+save_folder+"prob_map"+".png", dpi=4000)
+    
     return Metrics
 
 
@@ -96,6 +105,7 @@ load_checkpoint(checkpoint,model)
 
 
 tests=os.listdir(test_path)
+
 Preds={}
 for t in tests:
     wells=os.listdir(os.path.join(test_path,t))
