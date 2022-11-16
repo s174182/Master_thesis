@@ -12,3 +12,4 @@ six
 setuptools
 datetime
 wandb
+seaborn
