@@ -23,7 +23,6 @@ class twoConv(nn.Module):
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             )
-        
     # Create forward pass where we simply do the 2x convolutions on x
     def forward(self, x):
         return self.conv(x)
