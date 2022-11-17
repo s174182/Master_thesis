@@ -2,7 +2,7 @@
 #BSUB -J endpoint
 #BSUB -o endpoint_%J.out
 #BSUB -e endpoint_%J.err
-#BSUB -q gpua100
+#BSUB -q gpua40
 #BSUB -R "rusage[mem=24GB]"
 ## NUMBER OF CORES
 #BSUB -n 1 #IF USING ALL THREADS POSSIBLE

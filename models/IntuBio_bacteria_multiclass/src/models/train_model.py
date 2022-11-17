@@ -26,38 +26,40 @@ import os
 import hydra
 from hydra import compose, initialize
 from datetime import datetime
+import numpy as np
 import yaml
 import wandb
 
 # Hyper parameters
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 MODELNAME= str(datetime.now())+".pth"
-
+SOFTMAX = torch.nn.Softmax(dim=1)
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=True
+Debug_MODE=False
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/train/"
-    VAL_IMG_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
-    VAL_MASK_DIR = "/work3/s174182/train_data/Annotated_segmentation_patch_no_empty_masks/val/"
+    TRAIN_IMG_DIR = "/work3/s174182/multiclass_data_patch/multiclass/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/multiclass_data_patch/multiclass/train/"
+    VAL_IMG_DIR = "/work3/s174182/multiclass_data_patch/multiclass/val/"
+    VAL_MASK_DIR = "/work3/s174182/multiclass_data_patch/multiclass/val/"
 
 
 # Train function does one epoch
-def train_fn(loader, model, optimizer, loss_fn, loss_fn2,wloss_1,wloss_2):
+def train_fn(loader, model, optimizer, loss_fn, loss_fn2, wloss_1, wloss_2):
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
     with loop as pbar:
         for batch_idx, (data, targets) in enumerate(loop):
             data = data.float().to(device=DEVICE)
-            targets = targets.float().unsqueeze(1).to(device=DEVICE)
+            #targets = targets.permute(0,3,1,2) # permute the targets channels to match BATCH, CHANNELS, WIDTH, HEIGHT
+            targets = targets.float().to(device=DEVICE).permute(0,3,1,2)
 
             # Backward probagation  
             optimizer.zero_grad()
@@ -65,17 +67,11 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2,wloss_1,wloss_2):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
-            print(predictions.shape)
-            print(targets.shape)
+            loss = wloss_1*loss_fn(predictions, targets)# + wloss_2*loss_fn2(predictions, targets)
 
-            loss = wloss_1*loss_fn(predictions, targets)+wloss_2*loss_fn2(predictions, targets)
-
-                
             # Backward propagate and step optimizer
             loss.backward()
             optimizer.step()
-            
-            
             
             # Update tqdm 
             pbar.set_postfix(loss=loss.item())
@@ -105,7 +101,8 @@ def main():
     wloss_1=config["hyperparameters"]["w_loss1"]
     wloss_2=config["hyperparameters"]["w_loss2"]
     loss_fn2 = IoULoss()
-    loss_fn = nn.BCEWithLogitsLoss()
+    # Class weighting computed in separate script "get_class_weights"
+    loss_fn = nn.CrossEntropyLoss()
    
     #Transformation on train set
     train_transform = A.Compose([
@@ -127,7 +124,7 @@ def main():
 
     
     # Create model, loss function, optimizer, loaders
-    model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
+    model = Unet(in_channels = 1, out_channels = 5).to(device=DEVICE)
     
     # Set wandb to watch the model
     wandb.watch(model, log_freq=100)
@@ -154,7 +151,7 @@ def main():
         num_workers=NUM_WORKERS,
       )
 
-    best_score=0
+    best_score = 0
     # Go through epochs
     for epoch in range(NUM_EPOCHS):
         print("Training epoch:", epoch)
@@ -162,25 +159,23 @@ def main():
         # check accuracy
         Metrics, val_loss=check_accuracy(val_loader, model, device=DEVICE)
 
-
         wandb.log({'training_loss': train_loss})
         wandb.log({'validation_loss': val_loss})
-        wandb.log({'dice_score': Metrics["dice_score"]})
-        wandb.log({'Accuracy': Metrics["Accuracy"]})
-        wandb.log({'Specificity': Metrics["Specificity"]})
-        wandb.log({'Precision': Metrics["Precision"]})
-        wandb.log({'Recall': Metrics["Recall"]})
+        wandb.log({'dice_score': Metrics["dice_score"][1]})
+        wandb.log({'Accuracy': Metrics["Accuracy"][1]})
+        wandb.log({'Specificity': Metrics["Specificity"][1]})
+        wandb.log({'Precision': Metrics["Precision"][1]})
+        wandb.log({'Recall': Metrics["Recall"][1]})
         wandb.log({'epoch': epoch})
 
+        print(Metrics["dice_score"][1])
 
-
-
-        if Metrics["dice_score"]>best_score:
+        if Metrics["dice_score"][1] > best_score:
             # Save model, check accuracy, print some examples to folder
             checkpoint = {"state_dict": model.state_dict(),
                      "optimizer": optimizer.state_dict(),}
             save_checkpoint(checkpoint,MODELNAME)
-            best_score=Metrics["dice_score"]
+            best_score=Metrics["dice_score"][1]
         
         
     

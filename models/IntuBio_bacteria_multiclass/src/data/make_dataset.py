@@ -12,6 +12,8 @@ from torch.utils.data import Dataset
 import glob
 from PIL import Image
 from sklearn.utils import class_weight
+import torch.nn.functional as F
+import torch
 
 class BacteriaDataset(Dataset):
     # Initialize
@@ -55,8 +57,9 @@ class BacteriaDataset(Dataset):
         # get mask
         mask_path = self.masks[index]
         mask = np.array(Image.open(mask_path).convert("L"))
-        # Preprocess mask - convert to 1
-        mask[mask != 0] = 1.0        
+
+        # Preprocess mask - do one hot encoding
+        mask = F.one_hot(torch.tensor(mask).to(torch.int64), num_classes=5).numpy()
 
         # Do transforms if needed
         if self.transform is not None:
