@@ -1,7 +1,0 @@
-hyperparameters:
-  learning_rate: 0.0001
-  batch_size: 1
-  num_epochs: 20
-  num_workers: 1
-  lossfn: BCE
-  weight_decay: 1.0e-08
