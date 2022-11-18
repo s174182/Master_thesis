@@ -26,7 +26,9 @@ from helpers import ROI
 from utils import (load_checkpoint, get_patches, recon_im)
 import seaborn as sn
 
-def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
+
+def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=388//2):
+    print(img_path)
     transform = transforms.ToTensor()  
     # Read image and convert from BGR to RGB
     img_orig=cv2.imread(img_path,0)
@@ -38,6 +40,11 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
     img_pad=np.zeros((5616,6392))
     img_pad[148:5319+148:,136:(6119+136)]=img_orig
     
+
+
+
+
+
     # Create the patches
     patches=patchify(img_pad,(572,572),step=step)
     
@@ -51,12 +58,11 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
                 preds = model(x)
                 preds = torch.sigmoid(preds)
                 pred_patches.append(preds)
-
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
     pred_mask = recon_im(pred_patches,5616,6392,1,step) #reconstruct the patches and average overlapping patches
     pred_mask = pred_mask[56:5319+56,44:6119+44] #crop back to original mask shape
     heatmap_copy=pred_mask
-    pred_mask= (pred_mask>0.9).astype(np.uint8)
+    pred_mask= (pred_mask>threshold).astype(np.uint8)
     
 
     TP = np.sum(np.logical_and(pred_mask == 1, mask == 1))
@@ -79,19 +85,18 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu',step=388):
     shapes[pred_mask==1,0]=255;shapes[pred_mask==1,1]=255 # create a yellow filter for the predicted masks
     predicted_img = cv2.addWeighted(img_orig,1,shapes,0.25,0.1)
 
-    os.makedirs("../../data/predictions/"+model_name,exist_ok=True)
+    os.makedirs("/work3/s174182/predictions/"+model_name,exist_ok=True)
    
-    cv2.imwrite("../../data/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
-    
+    cv2.imwrite("/work3/s174182/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
+    plt.ioff()
     svm = sn.heatmap(heatmap_copy,yticklabels=False,xticklabels=False)
     figure = svm.get_figure()    
-    figure.savefig("../../data/predictions/"+model_name+"/"+save_folder+"prob_map"+".png", dpi=4000)
-    
+    figure.savefig("/work3/s174182/predictions/"+model_name+"/"+save_folder+"prob_map"+".png", dpi=1555)
+    plt.close()
     return Metrics
 
-
-test_path="/work3/s174182/Test_data/"
-model_name="2022-11-07 13:07:30.684089"
+test_path = "/work3/s174182/Test_data/"
+model_name = sys.argv[1] #"2022-11-07 13:07:30.684089"
 
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
@@ -103,7 +108,8 @@ checkpoint=torch.load(model_path)
 model.to(device=DEVICE)
 load_checkpoint(checkpoint,model) 
 
-
+STEP=388//2
+THR=0.75
 tests=os.listdir(test_path)
 
 Preds={}
@@ -113,7 +119,7 @@ for t in tests:
         if os.path.exists(os.path.join(test_path,t,w,"Mask_1.png")):
             img=os.path.join(test_path,t,w,"INorm.png") #eg: /work3/s174182/Test_data\\burkholderiaaccuracy20220927090618\\A1_D4_1\\INorm.png
             mask=os.path.join(test_path,t,w,"Mask_1.png")
-            Preds[img]=evaluate(img,mask,model,DEVICE=DEVICE)
+            Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP)
 
 
 dice=0; acc=0; prec=0; spec=0; rec=0
@@ -133,6 +139,6 @@ spec=spec/N
 rec=rec/N
 
 Preds["Average_metrics"]={"dice":dice,"Accuracy":acc,"Specificity":spec,"Precision":prec,"Recall":rec}
-
+Preds["settings"]={"step":STEP,"Threshold":THR}
 with open(f'../../reports/metrics{model_name}.json'.replace(":","_"),'w') as fp:
     json.dump(Preds,fp)

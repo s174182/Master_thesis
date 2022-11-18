@@ -166,7 +166,7 @@ class FocalLoss(nn.Module):
         focal_loss = alpha * (1-BCE_EXP)**gamma * BCE
                        
         return focal_loss
-    
+
 def recon_im(patches: np.ndarray, im_h: int, im_w: int, n_channels: int, stride: int):
     """Reconstruct the image from all patches.
         Patches are assumed to be square and overlapping depending on the stride. The image is constructed
@@ -233,6 +233,7 @@ def recon_im(patches: np.ndarray, im_h: int, im_w: int, n_channels: int, stride:
     reconstructedim = reconim / divim
 
     return reconstructedim
+
 def get_patches(GT, stride, patch_size):
     """Extracts square patches from an image of any size.
     Parameters

@@ -36,7 +36,7 @@ MODELNAME= str(datetime.now())+".pth"
 PIN_MEMORY = False
 LOAD_MODEL = False
 
-Debug_MODE=False
+Debug_MODE=True
 if Debug_MODE:
         TRAIN_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
         TRAIN_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/train/"
@@ -65,6 +65,8 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2,wloss_1,wloss_2):
             # Forward pass
             # with torch.cuda.amp.autocast():
             predictions = model(data)
+            print(predictions.shape)
+            print(targets.shape)
 
             loss = wloss_1*loss_fn(predictions, targets)+wloss_2*loss_fn2(predictions, targets)
 
@@ -100,14 +102,10 @@ def main():
     wandb.config.update({
     "dataset" : TRAIN_IMG_DIR
     })
-    wloss_1=config["hyperparameters"]["wloss_1"]
-    wloss_2=config["hyperparameters"]["wloss_2"]
+    wloss_1=config["hyperparameters"]["w_loss1"]
+    wloss_2=config["hyperparameters"]["w_loss2"]
     loss_fn2 = IoULoss()
-    loss_fn =nn.BCEWithLogitsLoss()
-    
-
-
-    
+    loss_fn = nn.BCEWithLogitsLoss()
    
     #Transformation on train set
     train_transform = A.Compose([
@@ -130,7 +128,6 @@ def main():
     
     # Create model, loss function, optimizer, loaders
     model = Unet(in_channels = 1, out_channels = 1).to(device=DEVICE)
-    
     
     # Set wandb to watch the model
     wandb.watch(model, log_freq=100)
@@ -156,8 +153,6 @@ def main():
         val_transform,
         num_workers=NUM_WORKERS,
       )
-    
-
 
     best_score=0
     # Go through epochs

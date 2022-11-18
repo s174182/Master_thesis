@@ -11,6 +11,7 @@ import os
 from torch.utils.data import Dataset
 import glob
 from PIL import Image
+from sklearn.utils import class_weight
 
 class BacteriaDataset(Dataset):
     # Initialize
@@ -55,7 +56,7 @@ class BacteriaDataset(Dataset):
         mask_path = self.masks[index]
         mask = np.array(Image.open(mask_path).convert("L"))
         # Preprocess mask - convert to 1
-        mask[mask != 0] = 1.0
+        mask[mask != 0] = 1.0        
 
         # Do transforms if needed
         if self.transform is not None:
