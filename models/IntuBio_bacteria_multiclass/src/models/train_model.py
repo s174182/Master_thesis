@@ -13,7 +13,7 @@ from torchvision import transforms
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from model import Unet
+from model_nopad import Unet
 from utils import (load_checkpoint,
                     save_checkpoint,
                     get_loaders,
@@ -44,10 +44,10 @@ if Debug_MODE:
         VAL_IMG_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
         VAL_MASK_DIR = "/work3/s174182/debug/Annotated_segmentation_patch/val/"
 else:
-    TRAIN_IMG_DIR = "/work3/s174182/multiclass_data_patch/multiclass/train/"
-    TRAIN_MASK_DIR = "/work3/s174182/multiclass_data_patch/multiclass/train/"
-    VAL_IMG_DIR = "/work3/s174182/multiclass_data_patch/multiclass/val/"
-    VAL_MASK_DIR = "/work3/s174182/multiclass_data_patch/multiclass/val/"
+    TRAIN_IMG_DIR = "/work3/s174182/multiclass_data_patch_nopad/multiclass/train/"
+    TRAIN_MASK_DIR = "/work3/s174182/multiclass_data_patch_nopad/multiclass/train/"
+    VAL_IMG_DIR = "/work3/s174182/multiclass_data_patch_nopad/multiclass/val/"
+    VAL_MASK_DIR = "/work3/s174182/multiclass_data_patch_nopad/multiclass/val/"
 
 
 # Train function does one epoch
@@ -124,7 +124,7 @@ def main():
 
     
     # Create model, loss function, optimizer, loaders
-    model = Unet(in_channels = 1, out_channels = 5).to(device=DEVICE)
+    model = Unet(in_channels = 1, out_channels=5).to(device=DEVICE)
     
     # Set wandb to watch the model
     wandb.watch(model, log_freq=100)
