@@ -44,7 +44,6 @@ def get_loaders(train_dir, train_mask_dir, val_dir, val_mask_dir,
     return train_loader, valid_loader
 
 # Check accuracy
-
 def check_accuracy(loader, model, device="cpu"):
     # init
     dice = []

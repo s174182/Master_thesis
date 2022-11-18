@@ -15,7 +15,7 @@ import argparse
 from patchify import patchify, unpatchify
 import torch
 import torchvision.transforms as transforms
-from model import Unet
+from model_nopad import Unet
 from scipy import ndimage
 import matplotlib.pyplot as plt
 import json
@@ -24,14 +24,15 @@ sys.path.append('../data/')
 from helpers import ROI
 from utils import (load_checkpoint, get_patches, recon_im)
 import seaborn as sn
-
+import albumentations as A
 
 
 def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
     print(img_path)
+    model.eval()
     transform = transforms.ToTensor()
     softmax = torch.nn.Softmax(dim=1)
-    DOWNSCALE=512 # this is equal to the patch size
+    DOWNSCALE=572 # this is equal to the patch size
     
     # Read image and convert from BGR to RGB
     img_orig=cv2.imread(img_path,0)
@@ -40,13 +41,17 @@ def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
     mask[mask>1]=1
     
     #Pad the image, nessecary in order to crop the image into 512X512 patches
-    hor_pad=np.ceil(img_orig.shape[1]/DOWNSCALE)*DOWNSCALE #padding in horizontal direction
-    ver_pad=np.ceil(img_orig.shape[0]/DOWNSCALE)*DOWNSCALE #padding in vertical direction
-    img=np.zeros((int(ver_pad),int(hor_pad)))
-    img[0:img_orig.shape[0],0:img_orig.shape[1]]=img_orig
-    
+    img_pad=np.zeros((5616,6392))
+    img_pad[148:5319+148:,136:(6119+136)]=img_orig
+
+    # Normalize image as to match training
+    pred_transform = A.Compose([A.augmentations.transforms.Normalize (mean=(145.7), std=(46.27), max_pixel_value=1.0, always_apply=False, p=1.0)
+        ])
+    augmented = pred_transform(image=img_pad)
+    img_pad=augmented["image"]
+
     # Create the patches
-    patches=patchify(img,(DOWNSCALE,DOWNSCALE),step=step)
+    patches = patchify(img_pad, (DOWNSCALE,DOWNSCALE), step=step)
     
     # Loop through and predict each patch
     pred_patches=[]
@@ -62,13 +67,13 @@ def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
 
                 # Set everything besides CFUs as 0
                 preds[preds != 1] = 0
-
+                
                 # Save patch
                 pred_patches.append(preds)
 
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
-    pred_mask =recon_im(pred_patches,img.shape[0],img.shape[1],1,step)
-    pred_mask = (pred_mask[:img_orig.shape[0],:img_orig.shape[1]])
+    pred_mask = recon_im(pred_patches,5616,6392,1,step) #reconstruct the patches and average overlapping patches
+    pred_mask = pred_mask[56:5319+56,44:6119+44] #crop back to original mask shape
     heatmap_copy=pred_mask
     pred_mask= (pred_mask>threshold).astype(np.uint8)
     
@@ -104,7 +109,7 @@ def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
     return Metrics
 
 test_path="/work3/s174182/Test_data/"
-model_name= sys.argv[1]#"2022-10-27 10_24_52.652741"
+model_name= "neat-donkey-187" #sys.argv[1]#"2022-10-27 10_24_52.652741"
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
 DEVICE=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
