@@ -2,9 +2,13 @@ import cv2
 import numpy as np
 from scipy import ndimage
 
+ """
+    Helper functions
+"""
+
 def ROI(mask,img):
     IthrMask=18
-    th, im_th = cv2.threshold(img[:,:,2], IthrMask, 255, cv2.THRESH_BINARY);
+    th, im_th = cv2.threshold(img[:,:,2], IthrMask, 255, cv2.THRESH_BINARY)
     im_th=ndimage.binary_fill_holes(im_th,structure =None,output =None,origin=0).astype(np.uint8)
     
     kernel = np.ones((25, 25), np.uint8)

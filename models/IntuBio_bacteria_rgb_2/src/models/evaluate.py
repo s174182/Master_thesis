@@ -6,8 +6,10 @@ Created on Wed Oct 26 12:32:58 2022
 
 This script is meant for evalutation, it loads a full Image together with its mask.
 Then it pads the image to preserve the full image, crop it into patches,
-predicts on those sticth them back together and measure the dice score.
+predicts on those stitch them back together and measure the dice score and other metrics.
+
 """
+
 import cv2
 import numpy as np
 import os
@@ -26,15 +28,37 @@ from utils import load_checkpoint, recon_im
 import albumentations as A
 import seaborn as sn
 
-def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256):
+def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256, downscale=512):
+    """
+    Function to evaluate a trained model on an independent test set
+    args: 
+        img_path: Path to test-images given as string
+        mask_path: Path to test-masks given as string
+        model: UNet model with loaded state-dictionary from a trained model
+        device: torch.device('cuda' if torch.cuda.is_available() else 'cpu') - GPU if available
+                else cpu
+        threshold: Threshold in probability map - defaults to 0.5
+        step: Stepsize in patches generated - defaults to 512//2
+        downscale: Patch sizes are of dimension DOWNSCALE x DOWNSCALE
+
+    Output:
+        Metrics: Dictionary of metrics
+            - Dice score
+            - Accuracy
+            - Precision
+            - Recall
+            - Specificity
+        Saved images: Saves probability map image and prediction image in specified path
+
+    """
     print(img_path)
     transform = transforms.ToTensor()
-    #model.eval()
+    model.eval()
 
-    DOWNSCALE=512 # this is equal to the patch size
+    DOWNSCALE=downscale # this is equal to the patch size
     
     # Read image and convert from BGR to RGB
-    img_orig=cv2.imread(img_path, cv2.COLOR_RGB2BGR)
+    img_orig= np.array(Image.open(img_path))
     N,M,_=np.shape(img_orig)
 
     # Mask
@@ -79,20 +103,24 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256):
     FN = np.sum(np.logical_and(pred_mask == 0, mask == 1))   
     FP = np.sum(np.logical_and(pred_mask == 1, mask == 0))
 
+    # Computer dice scores, accuracy, specificity, precision, recall
     dice = 2 * (TP)/(FP+2*TP+FN+1e-8)
     ACC = (TP+TN)/(TP+TN+FP+FN)
     Spec = (TN/(FP+TN+1e-8))
     Prec = TP/(TP+FP+1e-8)
     Recall= TP/(TP+FN+1e-8)
     
+    # Save metrics in dictionary 
     Metrics={"dice":dice,"Accuracy":ACC,"Specificity":Spec,"Precision":Prec,"Recall":Recall}
 
     #### SAVE IMAGE ####
     save_folder="_".join(img_path.split("/")[-3:-1])
+    img_merged = cv2.merge((img_orig[:,:,0],img_orig[:,:,0],img_orig[:,:,0]))
     shapes=np.zeros((N,M,3)).astype(np.uint8)
-    shapes[pred_mask==1,2]=255 # create a filter for the predicted masks
-    predicted_img = cv2.addWeighted(img_orig,1,shapes,0.25,0.1)
+    shapes[pred_mask==1,0]=255;shapes[pred_mask==1,1]=255; # create a filter for the predicted masks
+    predicted_img = cv2.addWeighted(img_merged,1,shapes,0.25,0.1)
    
+   # Create directory
     os.makedirs("/work3/s174182/predictions/"+model_name,exist_ok=True)
    
     cv2.imwrite("/work3/s174182/predictions/"+model_name+"/"+save_folder+".png",predicted_img)
@@ -104,21 +132,24 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256):
 
     return Metrics
 
-test_path="/work3/s174182/Test_data/"
-model_name="graceful-mountain-41"
-model_path="../../models/"+model_name+".pth" #to be made as an argument
+# Paths and model names
+test_path = "/work3/s174182/Test_data/"
+model_name = "supernatural-possession-43" #azure-spaceship-44"
+model_path = "../../models/"+model_name+".pth" #to be made as an argument
 os.makedirs("../../data/predictions/"+model_name,exist_ok=True) # to save predicted images in
 
+# Create model, and load state dictionary from the model defined in "model_name"
 DEVICE=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = Unet(in_channels=3, out_channels=1)
-
 checkpoint=torch.load(model_path)  
 model.to(device=DEVICE)
 load_checkpoint(checkpoint,model) 
 
-
-STEP=512//2
+# Set stepsize and threshold
+STEP=388//2
 THR=0.75
+
+# Loop to compute the metrics on evaluation
 tests=os.listdir(test_path)
 Preds={}
 for t in tests:
@@ -129,9 +160,8 @@ for t in tests:
             mask=os.path.join(test_path,t,w,"Mask_1.png")
             Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP)
 
-
+# initialize and load into variables
 dice=0; acc=0; prec=0; spec=0; rec=0
-
 for m in list(Preds.keys()):
     dice+=Preds[m]["dice"]
     acc+=Preds[m]["Accuracy"]
@@ -139,6 +169,7 @@ for m in list(Preds.keys()):
     spec+=Preds[m]["Specificity"]
     rec+=Preds[m]["Recall"]
 
+# Compute means
 N=len(Preds)
 dice=dice/N
 acc=acc/N
@@ -146,6 +177,7 @@ prec=prec/N
 spec=spec/N
 rec=rec/N
 
+# Save in json file
 Preds["Average_metrics"]={"dice":dice,"Accuracy":acc,"Specificity":spec,"Precision":prec,"Recall":rec}
 Preds["settings"]={"step":STEP,"Threshold":THR}
 with open(f'../../reports/metrics{model_name}.json','w') as fp:

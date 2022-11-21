@@ -27,7 +27,28 @@ from utils import (load_checkpoint, get_patches, recon_im)
 import seaborn as sn
 
 
-def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=388//2):
+def evaluate(img_path,mask_path,model,threshold=0.5,DEVICE='cpu',step=388//2):
+    """
+    Function to evaluate a trained model on an independent test set
+    args: 
+        img_path: Path to test-images given as string
+        mask_path: Path to test-masks given as string
+        model: UNet model with loaded state-dictionary from a trained model
+        device: torch.device('cuda' if torch.cuda.is_available() else 'cpu') - GPU if available
+                else cpu
+        threshold: Threshold in probability map - defaults to 0.5
+        step: Stepsize in patches generated - defaults to 388//2
+
+    Output:
+        Metrics: Dictionary of metrics
+            - Dice score
+            - Accuracy
+            - Precision
+            - Recall
+            - Specificity
+        Saved images: Saves probability map image and prediction image in specified path
+
+    """
     print(img_path)
     transform = transforms.ToTensor()  
     # Read image and convert from BGR to RGB
@@ -36,14 +57,9 @@ def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=388//2):
     mask=cv2.imread(mask_path,0)
     mask[mask>1]=1
     
-    #Pad the image, nessecary in order to crop the image into 512X512 patches
+    #Pad the image, nessecary in order to crop the image into 572X572 patches
     img_pad=np.zeros((5616,6392))
     img_pad[148:5319+148:,136:(6119+136)]=img_orig
-    
-
-
-
-
 
     # Create the patches
     patches=patchify(img_pad,(572,572),step=step)

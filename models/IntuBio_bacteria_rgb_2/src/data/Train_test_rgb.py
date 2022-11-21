@@ -4,6 +4,10 @@ import shutil
 import os
 import cv2
 
+ """
+    Train and validation data set generator
+"""
+
 # Load main directories
 Intubio_bacteria_path="/work3/s174182/train_data/Annotated_segmentation_patch_balanced"
 IntuBio_bacteria_rgb="/work3/s174182/RGB_method"

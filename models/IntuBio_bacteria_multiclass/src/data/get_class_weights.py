@@ -2,6 +2,10 @@ import os
 import numpy as np
 import cv2 
 
+"""
+Class weights computed if needed
+"""
+
 
 # Main image directory
 main_directory="/work3/s174182/multiclass_data/multiclass/"

@@ -3,6 +3,10 @@
 Created on Wed Oct  5 14:42:22 2022
 
 @author: Jonat
+
+Uses train_test_split to create training data set and validation data set
+Saves in specified folder
+
 """
 
 import os

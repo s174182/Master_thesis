@@ -5,8 +5,11 @@ Original images have the dimensions of
 
 6119 X 5319
 
-
-
+Args:
+    N: Dimensions of square patch NxN
+    step: Step size between each patch
+Output:
+    Patch images saved in specified save directory
 '''
 
 from patchify import patchify

@@ -4,6 +4,9 @@
 Created on Wed Sep 14 13:43:09 2022
 
 @author: frederikhartmann
+
+Dataset class used for data loader
+
 """
 
 import numpy as np

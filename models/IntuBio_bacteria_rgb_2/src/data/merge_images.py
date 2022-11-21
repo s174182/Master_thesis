@@ -3,6 +3,10 @@
 Created on Fri Oct 14 10:52:34 2022
 
 @author: Jonat
+
+Merges images needed for the RGB method
+Takes three timepoints and stacks it as T, T-2, T-4 for an RGB model interpretation
+
 """
 
 from patchify import patchify

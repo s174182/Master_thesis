@@ -4,6 +4,9 @@
 Created on Wed Sep 14 14:37:52 2022
 
 @author: frederikhartmann
+
+Utility script that holds neat functions to beautify training cycle
+
 """
 from asyncio.constants import ACCEPT_RETRY_DELAY
 import torch

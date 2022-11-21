@@ -3,6 +3,9 @@
 Created on Wed Oct  5 14:42:22 2022
 
 @author: Jonat
+
+Create train and validation sets based on image names
+
 """
 
 import os

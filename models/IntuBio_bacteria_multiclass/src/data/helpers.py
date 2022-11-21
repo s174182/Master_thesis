@@ -2,6 +2,13 @@ import cv2
 import numpy as np
 from scipy import ndimage
 
+"""
+Neat helper functions to beautify training cycle
+
+ROI: Computes region of interest, i.e., everything else than plate is black
+normimg: Normalizes image using rep 2 as reference image 
+"""
+
 def ROI(mask,img):
     IthrMask=18
     th, im_th = cv2.threshold(img, IthrMask, 255, cv2.THRESH_BINARY);
@@ -25,6 +32,8 @@ def ROI(mask,img):
             output=cv2.bitwise_or(output,componentMask)
             
     return output
+
+
 def normimg(img,imgref):
     IthrMask=18
     imnorm=(170*(img-10).astype(float)/(imgref-10).astype(float))

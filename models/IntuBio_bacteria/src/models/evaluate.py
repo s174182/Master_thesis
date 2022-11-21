@@ -27,11 +27,33 @@ import seaborn as sn
 
 
 
-def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
+def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256, downscale=512):
+    """
+    Function to evaluate a trained model on an independent test set
+    args: 
+        img_path: Path to test-images given as string
+        mask_path: Path to test-masks given as string
+        model: UNet model with loaded state-dictionary from a trained model
+        device: torch.device('cuda' if torch.cuda.is_available() else 'cpu') - GPU if available
+                else cpu
+        threshold: Threshold in probability map - defaults to 0.5
+        step: Stepsize in patches generated - defaults to 512//2
+        downscale: Patch sizes are of dimension DOWNSCALE x DOWNSCALE
+
+    Output:
+        Metrics: Dictionary of metrics
+            - Dice score
+            - Accuracy
+            - Precision
+            - Recall
+            - Specificity
+        Saved images: Saves probability map image and prediction image in specified path
+
+    """
     print(img_path)
     transform = transforms.ToTensor()
-    
-    DOWNSCALE=512 # this is equal to the patch size
+    model.eval()
+    DOWNSCALE=downscale # this is equal to the patch size
     
     # Read image and convert from BGR to RGB
     img_orig=cv2.imread(img_path,0)
@@ -58,6 +80,7 @@ def evaluate(img_path,mask_path,model,threshold,DEVICE='cpu',step=256):
                 preds = model(x)
                 preds = torch.sigmoid(preds)
                 pred_patches.append(preds)
+                
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
     pred_mask =recon_im(pred_patches,img.shape[0],img.shape[1],1,step)
     pred_mask = (pred_mask[:img_orig.shape[0],:img_orig.shape[1]])
@@ -108,6 +131,7 @@ load_checkpoint(checkpoint,model)
 
 STEP=388//2
 THR=0.75
+DOWNSCALE = 572
 tests=os.listdir(test_path)
 Preds={}
 for t in tests:
@@ -116,7 +140,7 @@ for t in tests:
         if os.path.exists(os.path.join(test_path,t,w,"Mask_1.png")):
             img=os.path.join(test_path,t,w,"INorm.png") #eg: /work3/s174182/Test_data\\burkholderiaaccuracy20220927090618\\A1_D4_1\\INorm.png
             mask=os.path.join(test_path,t,w,"Mask_1.png")
-            Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP)
+            Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP,downscale=DOWNSCALE)
 
 
 dice=0; acc=0; prec=0; spec=0; rec=0

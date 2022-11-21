@@ -4,6 +4,10 @@
 Created on Wed Sep 14 14:37:52 2022
 
 @author: frederikhartmann
+
+Multipled helper functions used to book-keep models, create data loaders
+and other helpful functions to ensure a more simple model training layout
+
 """
 import torch
 import torch.nn as nn
