@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+Helper functions for computing multi class metrics    
+"""
+
 def numeric_score(pred, gts):
     """Computation of statistical numerical scores:
     * FP = False Positives

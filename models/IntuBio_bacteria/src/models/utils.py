@@ -4,6 +4,9 @@
 Created on Wed Sep 14 14:37:52 2022
 
 @author: frederikhartmann
+
+Utility functions to beautify training cycle
+
 """
 from asyncio.constants import ACCEPT_RETRY_DELAY
 import torch
@@ -14,7 +17,7 @@ import os
 import numpy as np
 sys.path.append('src/data')
 from make_dataset import BacteriaDataset
-
+import numpy as np
 from torch.utils.data import DataLoader
 
 # save checkpoint

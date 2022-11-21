@@ -1,5 +1,8 @@
 ''' 
-
+Create patches data 
+args:
+    N: Dimensions for the NxN image patches
+    step: Step size between patches, 388 is default
 
 '''
 

@@ -3,6 +3,9 @@
 Created on Wed Oct  5 14:42:22 2022
 
 @author: Jonat
+
+Creates train and validation sets using scikit-learn
+
 """
 
 import os

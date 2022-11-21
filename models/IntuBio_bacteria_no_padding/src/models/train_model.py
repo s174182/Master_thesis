@@ -51,6 +51,24 @@ else:
 
 # Train function does one epoch
 def train_fn(loader, model, optimizer, loss_fn, loss_fn2,wloss_1,wloss_2):
+     """
+    Function to train a model on specified training data
+    and validating on specified validation data
+    args: 
+        loader: DataLoader created using the make_dataset.py file holding training data
+                in batches, together with transforms and more.
+        model: The loaded (UNet) model that is to be trained
+        optimizer: Optimizer used to compute gradients used for loss and model training
+        loss_fn: Loss function 1
+        loss_fn: Loss function 2
+        w_loss1: Weighting of loss function 1
+        w_loss2: Weighting of loss function 2
+
+    Output:
+        running_loss: Computed loss in the current epoch
+        updated weights in network
+    """
+
     loop = tqdm(loader,position=0,leave=True)
     # Go through batch
     running_loss = 0.0
@@ -84,6 +102,32 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2,wloss_1,wloss_2):
     return running_loss/len(loop)
 
 def main():
+    """
+    Function for book-keeping the training cycle and validation on validation set. 
+    This also specifies transformations used on data (augmentations)
+    Runs Weights and Biases logging for visualization purposes
+    
+    Needs basic.yaml file as configuration for training, holding the following fixed values
+        - learning_rate: The learning rate used in optimizer
+        - batch_size: Batch size used in training cycle
+        - weight_decay: Regularization parameter in optimizer
+        - optimizer: What optimizer should be used (currently either sgd or adam)
+        - num_epochs: Number of epochs needed for training
+        - num_workers: Number of workers needed for training, default should be 1
+        - w_loss1: Weighting of loss function 1
+        - w_loss2: Weighting of loss function 2
+
+    Output:
+        Model state dictionary for model with best score
+        Weights and Biases logs on their website wandb.ai 
+        NB: 
+            To run with wandb create a profile on wandb.ai, 
+            make an entity (team) on their website
+            and input the name in wandb.init. For help, see wandb documentation on
+            https://docs.wandb.ai/
+
+    """
+
     # Load sweep configuration
     with open('basic.yaml') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)

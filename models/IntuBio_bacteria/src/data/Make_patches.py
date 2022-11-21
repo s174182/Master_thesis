@@ -5,8 +5,9 @@ Original images have the dimensions of
 
 6119 X 5319
 
-Use stepsize 211 as it's a divisor of 6119
-Use stepsize 197 as it's a divisor of 5319
+Args: 
+    N: Dimensions for NxN patch
+    step: Step size for patches
 
 '''
 

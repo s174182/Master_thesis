@@ -4,6 +4,9 @@
 Created on Wed Sep 14 13:43:09 2022
 
 @author: frederikhartmann
+
+Data set class
+
 """
 
 import numpy as np

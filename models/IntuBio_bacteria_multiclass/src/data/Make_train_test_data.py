@@ -3,6 +3,9 @@
 Created on Wed Oct  5 14:42:22 2022
 
 @author: Jonat
+
+Creates training and validation sets using train test split from scikit-learn.
+
 """
 
 import os
