@@ -71,11 +71,6 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256, dow
     img=np.zeros((int(ver_pad),int(hor_pad),3))
     img[0:img_orig.shape[0],0:img_orig.shape[1],:]=img_orig
     
-    # Normalize image as to match training
-    pred_transform = A.Compose([A.augmentations.transforms.Normalize(mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=1, always_apply=False, p=1.0),
-    ])
-    augmented = pred_transform(image=img)
-    img=augmented["image"]
 
     # Create the patches
     patches=patchify(img,(DOWNSCALE,DOWNSCALE,3),step=step)
@@ -85,14 +80,32 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256, dow
     with torch.no_grad():
         for i in range(patches.shape[0]):
             for j in range (patches.shape[1]):
-                x = transform(patches[i, j, 0, :, :, :])
+                # Transform image to tensor
+                x = patches[i, j, 0, :, :, :]                
+
+                # Normalize image
+                im_mean1, im_std1 = np.mean(x[:,:,0]), np.std(x[:,:,0])
+                im_mean2, im_std2 = np.mean(x[:,:,1]), np.std(x[:,:,1])
+                im_mean3, im_std3 = np.mean(x[:,:,2]), np.std(x[:,:,2])
+                
+                # Normalize image as to match training
+                if np.sum(x) > 1:
+                    pred_transform = A.Compose([A.augmentations.transforms.Normalize(mean=(im_mean1, im_mean2, im_mean3), std=(im_std1, im_std2, im_std3), max_pixel_value=1, always_apply=True, p=1.0),
+                    ])
+                    augmented = pred_transform(image=x)
+                    x=augmented["image"]
+
+                # To tensor
+                x = transform(x)
+
+                # Predict
                 x = x[None,:].float().to(device=DEVICE) #as its not a batch do a dummy expansion
                 preds = model(x)
                 preds = torch.sigmoid(preds)
                 pred_patches.append(preds)
 
     pred_patches = np.array([pred_patches[k].cpu().numpy().squeeze() for k in range(0,len(pred_patches))])
-    pred_mask =recon_im(pred_patches,img.shape[0],img.shape[1],1,step)
+    pred_mask =recon_im(pred_patches, img.shape[0], img.shape[1],1,step)
     pred_mask = (pred_mask[:img_orig.shape[0],:img_orig.shape[1]])
     heatmap_copy=pred_mask
     pred_mask= (pred_mask>threshold).astype(np.uint8)
@@ -134,7 +147,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256, dow
 
 # Paths and model names
 test_path = "/work3/s174182/Test_data/"
-model_name = "supernatural-possession-43" #azure-spaceship-44"
+model_name = "faithful-cosmos-47" #azure-spaceship-44"
 model_path = "../../models/"+model_name+".pth" #to be made as an argument
 os.makedirs("../../data/predictions/"+model_name,exist_ok=True) # to save predicted images in
 
@@ -146,7 +159,8 @@ model.to(device=DEVICE)
 load_checkpoint(checkpoint,model) 
 
 # Set stepsize and threshold
-STEP=388//2
+DOWNSCALE=512
+STEP=DOWNSCALE//2
 THR=0.75
 
 # Loop to compute the metrics on evaluation
@@ -158,7 +172,7 @@ for t in tests:
         if os.path.exists(os.path.join(test_path,t,w,"Mask_1.png")):
             img=os.path.join(test_path,t,w,"INorm_rgb.png") #eg: /work3/s174182/Test_data\\burkholderiaaccuracy20220927090618\\A1_D4_1\\INorm.png
             mask=os.path.join(test_path,t,w,"Mask_1.png")
-            Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP)
+            Preds[img]=evaluate(img,mask,model,threshold=THR,DEVICE=DEVICE,step=STEP, downscale=DOWNSCALE)
 
 # initialize and load into variables
 dice=0; acc=0; prec=0; spec=0; rec=0

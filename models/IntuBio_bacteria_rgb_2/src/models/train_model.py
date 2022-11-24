@@ -145,13 +145,15 @@ def main():
     w_loss1 = config['hyperparameters']['w_loss1']
     w_loss2 = config['hyperparameters']['w_loss2']
 
+    # Skipborders parameter
+    SKIPBORDERS = False
+
     #Transformation on train set
     # Mean and std can be calculated in mean_std found in subfolder data
     train_transform = A.Compose([
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
-        A.augmentations.transforms.Normalize(mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=1, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
     
@@ -160,7 +162,6 @@ def main():
         A.augmentations.geometric.transforms.HorizontalFlip(p=0.5),
         A.augmentations.geometric.transforms.VerticalFlip(p=0.5),
         A.augmentations.geometric.rotate.Rotate(limit=180, interpolation=1, border_mode=4, value=None, mask_value=None, rotate_method='largest_box', crop_border=False, always_apply=False, p=0.5),
-        A.augmentations.transforms.Normalize(mean=(144.8, 147.22, 149.29), std=(46.7, 45.58, 44.91), max_pixel_value=1, always_apply=False, p=1.0),
         ToTensorV2(),
         ])
 
@@ -203,6 +204,7 @@ def main():
         train_transform,
         val_transform,
         num_workers=NUM_WORKERS,
+        skipborders=SKIPBORDERS,
       )
     
 #    writer.add_graph(model, iter(train_loader).next()[0].to(device=DEVICE))
@@ -218,8 +220,14 @@ def main():
         
         wandb.log({'training_loss': train_loss})
         wandb.log({'validation_loss': val_loss})
-        wandb.log({'dice_score': dice_score})
+        wandb.log({'dice_score': Metrics["dice_score"][1]})
+        wandb.log({'Accuracy': Metrics["Accuracy"][1]})
+        wandb.log({'Specificity': Metrics["Specificity"][1]})
+        wandb.log({'Precision': Metrics["Precision"][1]})
+        wandb.log({'Recall': Metrics["Recall"][1]})
         wandb.log({'epoch': epoch})
+
+        print(Metrics["dice_score"][1])
 
 
         if dice_score>best_score:
