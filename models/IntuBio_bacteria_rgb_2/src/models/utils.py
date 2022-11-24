@@ -31,14 +31,14 @@ def load_checkpoint(checkpoint, model):
     
 # Get loaders
 def get_loaders(train_dir, train_mask_dir, val_dir, val_mask_dir, 
-                batch_size, train_transform, val_transform, num_workers=1, pin_memory=True):
+                batch_size, train_transform, val_transform, num_workers=1, pin_memory=True, skipborders=False):
     
     # Train dataloader
-    train_ds = BacteriaDataset(image_dir = train_dir, mask_dir=train_mask_dir, transform = train_transform)
+    train_ds = BacteriaDataset(image_dir = train_dir, mask_dir=train_mask_dir, transform = train_transform, skipborders=skipborders)
     train_loader = DataLoader(train_ds, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, shuffle=True)
     
     # Validation dataloader
-    valid_ds = BacteriaDataset(image_dir = val_dir, mask_dir=val_mask_dir, transform = val_transform)
+    valid_ds = BacteriaDataset(image_dir = val_dir, mask_dir=val_mask_dir, transform = val_transform, skipborders=skipborders)
     valid_loader = DataLoader(valid_ds, batch_size=1, num_workers=num_workers, pin_memory=pin_memory, shuffle=False)
     
     return train_loader, valid_loader
@@ -71,17 +71,30 @@ def check_accuracy(loader, model, device="cpu"):
             # count
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
-            dice_score += (2 * (preds*y).sum())/((preds+y).sum() + 1e-8)
+            TP = torch.sum(torch.logical_and(preds == 1.0, y == 1.0))
+            TN = torch.sum(torch.logical_and(preds == 0.0, y == 0.0))
+            FN = torch.sum(torch.logical_and(preds == 0.0, y == 1.0))   
+            FP = torch.sum(torch.logical_and(preds == 1.0, y == 0.0))
+
+            dice += 2 * (TP)/(FP+2*TP+FN+1e-8)
+            ACC += (TP+TN)/(TP+TN+FP+FN)
+            Spec += (TN/(FP+TN+1e-8))
+            Prec += TP/(TP+FP+1e-8)
+            Recall+= TP/(TP+FN+1e-8)
+    
+    N=len(loader)
+    Metrics={"dice_score":dice/N,"Accuracy":ACC/N,"Specificity":Spec/N,"Precision":Prec/N,"Recall":Recall/N}
+            
     
     # Print statements
     print(len(loader))
     print(f"Got {num_correct}/{num_pixels} with accuracy {num_correct/num_pixels*100:.2f}")
-    print(f"Dice score: {dice_score/len(loader)}")
+    print("Metrics",Metrics)
     
     # Set model back to training
     model.train()
     
-    return dice_score/len(loader), running_loss/len(loader)
+    return Metrics, running_loss/len(loader)
     
     
 # Save predictions

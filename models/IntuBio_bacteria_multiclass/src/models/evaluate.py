@@ -132,7 +132,7 @@ def evaluate(img_path,mask_path,model,threshold=0.5,DEVICE='cpu',step=256, downs
     return Metrics
 
 test_path="/work3/s174182/Test_data/"
-model_name= "neat-donkey-187" #sys.argv[1]#"2022-10-27 10_24_52.652741"
+model_name= "cool-sponge-202" #sys.argv[1]#"2022-10-27 10_24_52.652741"
 model_path="../../models/"+model_name+".pth" #to be made as an argument
 
 DEVICE=torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -142,9 +142,9 @@ checkpoint=torch.load(model_path)
 model.to(device=DEVICE)
 load_checkpoint(checkpoint,model) 
 
-STEP=388//2
+DOWNSCALE = 512
+STEP=DOWNSCALE//2
 THR=0.75
-DOWNSCALE = 572
 tests=os.listdir(test_path)
 Preds={}
 for t in tests:
