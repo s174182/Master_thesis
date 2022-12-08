@@ -49,7 +49,11 @@ def check_accuracy(loader, model, device="cpu"):
     # init
     num_correct = 0
     num_pixels = 0
-    dice_score = 0
+    dice = 0
+    ACC=0
+    Spec=0
+    Prec=0
+    Recall=0
     # put model in eval
     model.eval()
     loss_fn=IoULoss()
@@ -87,7 +91,6 @@ def check_accuracy(loader, model, device="cpu"):
             
     
     # Print statements
-    print(len(loader))
     print(f"Got {num_correct}/{num_pixels} with accuracy {num_correct/num_pixels*100:.2f}")
     print("Metrics",Metrics)
     
