@@ -147,7 +147,7 @@ def evaluate(img_path,mask_path,model,DEVICE='cpu', threshold=0.5, step=256, dow
 
 # Paths and model names
 test_path = "/work3/s174182/Test_data/"
-model_name = "faithful-cosmos-47" #azure-spaceship-44"
+model_name = "supernatural-possession-43" #azure-spaceship-44"
 model_path = "../../models/"+model_name+".pth" #to be made as an argument
 os.makedirs("../../data/predictions/"+model_name,exist_ok=True) # to save predicted images in
 

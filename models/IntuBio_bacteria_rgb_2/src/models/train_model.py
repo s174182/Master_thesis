@@ -147,6 +147,7 @@ def main():
 
     # Skipborders parameter
     SKIPBORDERS = False
+    wandb.config.update({"Skipborders": SKIPBORDERS})
 
     #Transformation on train set
     # Mean and std can be calculated in mean_std found in subfolder data
@@ -216,26 +217,26 @@ def main():
         print("Training epoch:", epoch)
         train_loss = train_fn(train_loader, model, optimizer, loss_fn, loss_fn2, w_loss1, w_loss2)         
         # check accuracy
-        dice_score, val_loss=check_accuracy(val_loader, model, device=DEVICE)
+        Metrics, val_loss=check_accuracy(val_loader, model, device=DEVICE)
         
         wandb.log({'training_loss': train_loss})
         wandb.log({'validation_loss': val_loss})
-        wandb.log({'dice_score': Metrics["dice_score"][1]})
-        wandb.log({'Accuracy': Metrics["Accuracy"][1]})
-        wandb.log({'Specificity': Metrics["Specificity"][1]})
-        wandb.log({'Precision': Metrics["Precision"][1]})
-        wandb.log({'Recall': Metrics["Recall"][1]})
+        wandb.log({'dice_score': Metrics["dice_score"]})
+        wandb.log({'Accuracy': Metrics["Accuracy"]})
+        wandb.log({'Specificity': Metrics["Specificity"]})
+        wandb.log({'Precision': Metrics["Precision"]})
+        wandb.log({'Recall': Metrics["Recall"]})
         wandb.log({'epoch': epoch})
 
-        print(Metrics["dice_score"][1])
+        print(Metrics["dice_score"])
 
 
-        if dice_score>best_score:
+        if Metrics["dice_score"]>best_score:
             # Save model, check accuracy, print some examples to folder
             checkpoint = {"state_dict": model.state_dict(),
                      "optimizer": optimizer.state_dict(),}
             save_checkpoint(checkpoint,MODELNAME)
-            best_score=dice_score
+            best_score=Metrics["dice_score"]
         
         # Save images
         # save_predictions_as_imgs(val_loader, model, folder="saved_images/", device=DEVICE)

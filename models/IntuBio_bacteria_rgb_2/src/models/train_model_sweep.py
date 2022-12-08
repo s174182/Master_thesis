@@ -97,7 +97,7 @@ def train_fn(loader, model, optimizer, loss_fn, loss_fn2, scaler):
     return running_loss/len(loop)
 
 def main():
-     """
+    """
     Function for book-keeping the training cycle and validation on validation set. 
     This also specifies transformations used on data (augmentations)
     Runs Weights and Biases logging for visualization purposes

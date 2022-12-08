@@ -30,12 +30,12 @@ def normimg(img,imgref):
     imnorm=imnorm.astype(np.uint8)
 
     
-    th, im_th = cv2.threshold(imgref, IthrMask, 255, cv2.THRESH_BINARY);
+    th, im_th = cv2.threshold(imgref, IthrMask, 255, cv2.THRESH_BINARY)
     im_th=ndimage.binary_fill_holes(im_th,structure =None,output =None,origin=0).astype(np.uint8)
     
     kernel = np.ones((25, 25), np.uint8)
       
-    # # Using cv2.erode() method 
+    # Using cv2.erode() method 
     ROI = cv2.erode(im_th, kernel)
 
     imnorm[ROI==0]=0
